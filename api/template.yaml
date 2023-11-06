@@ -36,6 +36,19 @@ Resources:
           AttributeType: S
         - AttributeName: sk
           AttributeType: S
+        - AttributeName: type
+          AttributeType: S
+        - AttributeName: sort
+          AttributeType: S
+      GlobalSecondaryIndexes:
+        - IndexName: types
+          KeySchema:
+            - AttributeName: type
+              KeyType: HASH
+            - AttributeName: sort
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
 
   SwagBucket:
     Type: AWS::S3::Bucket
@@ -43,6 +56,47 @@ Resources:
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
+
+  SwagApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      TracingEnabled: true
+      StageName: v1
+      MethodSettings:
+        - MetricsEnabled: True
+          ResourcePath: '/*'
+          HttpMethod: '*'
+          LoggingLevel: ERROR
+          DataTraceEnabled: True
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: ./openapi.yaml
+
+  AddSwagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/add-swag
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+              Resource: !GetAtt SwagTable.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref SwagTable
+      Events:
+        FromApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SwagApi
+            Path: /swag
+            Method: POST
 
   # PublicReadPolicy:
   #   Type: "AWS::S3::BucketPolicy"
@@ -68,9 +122,11 @@ Resources:
         S3DeleteObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:deleteObject
         S3HeadObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:headObject
         S3CopyObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:copyObject
+        DynamoDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
         LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
         EventBridgePutEvents: !Sub arn:${AWS::Partition}:states:::events:putEvents
         SwagBucket: !Ref SwagBucket
+        SwagTable: !Ref SwagTable
         GetSwagTypeFunction: !GetAtt GetSwagTypeFunction.Arn
       Policies:
         - Version: 2012-10-17
@@ -98,6 +154,9 @@ Resources:
             - Effect: Allow
               Action: events:PutEvents
               Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+            - Effect: Allow
+              Action: dynamodb:PutItem
+              Resource: !GetAtt SwagTable.Arn
       Events:
         S3ItemUploaded:
           Type: EventBridgeRule

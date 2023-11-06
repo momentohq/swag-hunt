@@ -192,8 +192,28 @@
           }
         }
       ],
-      "Next": "Build Success Message",
+      "Next": "Save Image Record",
       "ResultPath": "$.processedResults"
+    },
+    "Save Image Record": {
+      "Type": "Task",
+      "Resource": "${DynamoDBPutItem}",
+      "Parameters": {
+        "TableName": "${SwagTable}",
+        "Item": {
+          "pk": {
+            "S.$": "$.imageData.referencenumber"
+          },
+          "sk": {
+            "S": "image"
+          },
+          "url": {
+            "S.$": "States.Format('https://${SwagBucket}.s3.amazonaws.com/public/{}', States.ArrayGetItem(States.StringSplit($$.Execution.Input.detail.object.key, '/'), States.MathAdd(States.ArrayLength(States.StringSplit($$.Execution.Input.detail.object.key, '/')), -1)))"
+          }
+        }
+      },
+      "Next": "Build Success Message",
+      "ResultPath": null
     },
     "Build Success Message": {
       "Type": "Pass",
