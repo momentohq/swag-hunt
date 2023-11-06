@@ -1,0 +1,232 @@
+{
+  "Comment": "State machine that moderates and classifies incoming images",
+  "StartAt": "Moderate and Get Detail",
+  "States": {
+    "Moderate and Get Detail": {
+      "Type": "Parallel",
+      "Next": "Check For Inappropriate Content",
+      "Branches": [
+        {
+          "StartAt": "Moderate Photo",
+          "States": {
+            "Moderate Photo": {
+              "Type": "Task",
+              "Parameters": {
+                "Image": {
+                  "S3Object": {
+                    "Bucket": "${SwagBucket}",
+                    "Name.$": "$.detail.object.key"
+                  }
+                }
+              },
+              "Resource": "${DetectModerationLabels}",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Get Photo Metadata",
+          "States": {
+            "Get Photo Metadata": {
+              "Type": "Task",
+              "Parameters": {
+                "Bucket": "${SwagBucket}",
+                "Key.$": "$$.Execution.Input.detail.object.key"
+              },
+              "Resource": "${S3HeadObject}",
+              "End": true
+            }
+          }
+        }
+      ],
+      "ResultPath": "$.imageDetail"
+    },
+    "Check For Inappropriate Content": {
+      "Type": "Pass",
+      "Parameters": {
+        "moderationLabelCount.$": "States.ArrayLength($.imageDetail[0].ModerationLabels)",
+        "imageData.$": "$.imageDetail[1].Metadata"
+      },
+      "Next": "Has Inappropriate Content?"
+    },
+    "Has Inappropriate Content?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.moderationLabelCount",
+          "NumericGreaterThan": 0,
+          "Next": "Cleanup and Notify User"
+        }
+      ],
+      "Default": "Process Photo"
+    },
+    "Cleanup and Notify User": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Delete Inappropriate Object",
+          "States": {
+            "Delete Inappropriate Object": {
+              "Type": "Task",
+              "Parameters": {
+                "Bucket": "${SwagBucket}",
+                "Key.$": "$$.Execution.Input.detail.object.key"
+              },
+              "Resource": "${S3DeleteObject}",
+              "ResultPath": null,
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Build Failure Message",
+          "States": {
+            "Build Failure Message": {
+              "Type": "Pass",
+              "Next": "Send Inappropriate Image Message",
+              "Parameters": {
+                "topicName.$": "$.imageData.referencenumber",
+                "message": {
+                  "result": "Rejected",
+                  "message": "The provided image is not appropriate"
+                }
+              }
+            },
+            "Send Inappropriate Image Message": {
+              "Type": "Task",
+              "Resource": "${EventBridgePutEvents}",
+              "Parameters": {
+                "Entries": [
+                  {
+                    "Detail": {
+                      "cacheName": "reinvent",
+                      "topicName.$": "$.topicName",
+                      "message.$": "States.Base64Encode(States.JsonToString($.message))"
+                    },
+                    "DetailType": "topicPublish",
+                    "Source": "ProcessSwagStateMachine"
+                  }
+                ]
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "Fail",
+      "ResultPath": null
+    },
+    "Fail": {
+      "Type": "Fail"
+    },
+    "Process Photo": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Detect Swag Labels",
+          "States": {
+            "Detect Swag Labels": {
+              "Type": "Task",
+              "Parameters": {
+                "Image": {
+                  "S3Object": {
+                    "Bucket": "${SwagBucket}",
+                    "Name.$": "$$.Execution.Input.detail.object.key"
+                  }
+                }
+              },
+              "Resource": "${DetectLabels}",
+              "Next": "Get Swag Type"
+            },
+            "Get Swag Type": {
+              "Type": "Task",
+              "Resource": "${LambdaInvoke}",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${GetSwagTypeFunction}",
+                "Payload": {
+                  "labels.$": "$.Labels"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Move to Public Directory",
+          "States": {
+            "Move to Public Directory": {
+              "Type": "Task",
+              "Parameters": {
+                "Bucket": "${SwagBucket}",
+                "CopySource.$": "States.Format('${SwagBucket}/{}', $$.Execution.Input.detail.object.key)",
+                "Key.$": "States.Format('public/{}', States.ArrayGetItem(States.StringSplit($$.Execution.Input.detail.object.key, '/'), States.MathAdd(States.ArrayLength(States.StringSplit($$.Execution.Input.detail.object.key, '/')), -1)))"
+              },
+              "Resource": "${S3CopyObject}",
+              "ResultPath": null,
+              "Next": "Delete Quarantine Object"
+            },
+            "Delete Quarantine Object": {
+              "Type": "Task",
+              "Parameters": {
+                "Bucket": "${SwagBucket}",
+                "Key.$": "$$.Execution.Input.detail.object.key"
+              },
+              "Resource": "${S3DeleteObject}",
+              "ResultPath": null,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "Build Success Message",
+      "ResultPath": "$.processedResults"
+    },
+    "Build Success Message": {
+      "Type": "Pass",
+      "Parameters": {
+        "topicName.$": "$.imageData.referencenumber",
+        "message": {
+          "result": "Succeeded",
+          "type.$": "$.processedResults[0].type",
+          "tags.$": "$.processedResults[0].tags"
+        }
+      },
+      "Next": "Send Success Message"
+    },
+    "Send Success Message": {
+      "Type": "Task",
+      "Resource": "${EventBridgePutEvents}",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "cacheName": "reinvent",
+              "topicName.$": "$.topicName",
+              "message.$": "States.Base64Encode(States.JsonToString($.message))"
+            },
+            "DetailType": "topicPublish",
+            "Source": "ProcessSwagStateMachine"
+          }
+        ]
+      },
+      "Next": "Success"
+    },
+    "Success": {
+      "Type": "Succeed"
+    }
+  }
+}

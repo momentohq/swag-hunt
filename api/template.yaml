@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Service for swag hunt
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Architectures:
+      - arm64
+    Tracing: Active
+    Timeout: 3
+    MemorySize: 1024
+    Handler: index.handler
+    Environment:
+      Variables:
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+  Api:
+    Cors:
+      AllowMethods: "'POST,GET,PUT,OPTIONS'"
+      AllowHeaders: "'Content-Type'"
+      AllowOrigin: "'*'"
+
+Resources:
+  SwagTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+
+  SwagBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+
+  # PublicReadPolicy:
+  #   Type: "AWS::S3::BucketPolicy"
+  #   Properties:
+  #     Bucket: !Ref SwagBucket
+  #     PolicyDocument:
+  #       Statement:
+  #         - Effect: "Allow"
+  #           Principal: "*"
+  #           Action: s3:GetObject
+  #           Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/*
+  #           Condition:
+  #             StringEquals:
+  #               "s3:prefix": "public/"
+
+  ProcessSwagStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: workflows/process-new-images.asl.json
+      DefinitionSubstitutions:
+        DetectModerationLabels: !Sub arn:${AWS::Partition}:states:::aws-sdk:rekognition:detectModerationLabels
+        DetectLabels: !Sub arn:${AWS::Partition}:states:::aws-sdk:rekognition:detectLabels
+        S3DeleteObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:deleteObject
+        S3HeadObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:headObject
+        S3CopyObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:copyObject
+        LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
+        EventBridgePutEvents: !Sub arn:${AWS::Partition}:states:::events:putEvents
+        SwagBucket: !Ref SwagBucket
+        GetSwagTypeFunction: !GetAtt GetSwagTypeFunction.Arn
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - rekognition:DetectModerationLabels
+                - rekognition:DetectLabels
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:DeleteObject
+                - s3:HeadObject
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/*
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:PutObjectAcl
+                - s3:PutObjectStorageClass
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/public/*
+            - Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource: !GetAtt GetSwagTypeFunction.Arn
+            - Effect: Allow
+              Action: events:PutEvents
+              Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+      Events:
+        S3ItemUploaded:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - aws.s3
+              detail-type:
+                - Object Created
+              detail:
+                bucket:
+                  name:
+                    - !Ref SwagBucket
+                object:
+                  key:
+                    - prefix: quarantine/
+
+  GetSwagTypeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions\ask-ai-for-swag-type
+      Timeout: 30
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: 'bedrock:InvokeModel'
+              Resource: '*'
+
+

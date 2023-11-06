@@ -1,0 +1,14 @@
+{
+  "name": "ask-ai-for-swag-type",
+  "version": "1.0.0",
+  "description": "Asks Amazon Bedrock to identify swag type",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Momento, Inc",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.441.0"
+  }
+}
