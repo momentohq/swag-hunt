@@ -10,10 +10,21 @@ export interface ImageProps {
 
 export interface SharedModalProps {
   index: number
-  images?: ImageProps[]
+  images?: SwagSummary[]
   currentPhoto?: ImageProps
   changePhotoId: (newVal: number) => void
   closeModal: () => void
   navigation: boolean
   direction?: number
+}
+
+export interface SwagSummary {
+  from: string,
+  type: string,
+  url: string,
+  upvotes: number
+}
+
+export interface SwagList {
+  swag: SwagSummary[]
 }

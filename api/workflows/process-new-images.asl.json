@@ -177,7 +177,17 @@
               },
               "Resource": "${S3CopyObject}",
               "ResultPath": null,
-              "Next": "Delete Quarantine Object"
+              "Next": "Make Image Public"
+            },
+            "Make Image Public": {
+              "Type": "Task",
+              "Next": "Delete Quarantine Object",
+              "Parameters": {
+                "Bucket": "${SwagBucket}",
+                "Key.$": "States.Format('public/{}', States.ArrayGetItem(States.StringSplit($$.Execution.Input.detail.object.key, '/'), States.MathAdd(States.ArrayLength(States.StringSplit($$.Execution.Input.detail.object.key, '/')), -1)))",
+                "Acl": "public-read"
+              },
+              "Resource": "${S3PutObjectAcl}"
             },
             "Delete Quarantine Object": {
               "Type": "Task",

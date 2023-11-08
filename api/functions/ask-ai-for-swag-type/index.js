@@ -32,7 +32,6 @@ exports.handler = async (state) => {
 
     const answer = JSON.parse(new TextDecoder().decode(response.body));
     const completion = answer.completion;
-    console.log(completion);
     const type = getTypeFromAnswer(completion);
 
     const tags = state.labels.filter(l => l.Confidence >= 80).map(l => l.Name);

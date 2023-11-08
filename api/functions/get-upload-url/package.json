@@ -1,0 +1,20 @@
+{
+  "name": "get-upload-url",
+  "version": "1.0.0",
+  "description": "Gets a presigned url for swag image upload",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.445.0",
+    "@aws-sdk/client-secrets-manager": "^3.445.0"
+  },
+  "dependencies": {
+    "@aws-sdk/s3-request-presigner": "^3.445.0",
+    "@gomomento/sdk": "^1.46.2",
+    "short-uuid": "^4.2.2"
+  }
+}

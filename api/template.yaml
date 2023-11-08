@@ -3,6 +3,15 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Service for swag hunt
 
+Parameters:
+  MomentoApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+  DefaultCache:
+    Type: String
+    Default: reinvent
+
 Globals:
   Function:
     Runtime: nodejs18.x
@@ -10,7 +19,7 @@ Globals:
       - arm64
     Tracing: Active
     Timeout: 3
-    MemorySize: 1024
+    MemorySize: 2048
     Handler: index.handler
     Environment:
       Variables:
@@ -87,6 +96,9 @@ Resources:
                 - dynamodb:GetItem
                 - dynamodb:PutItem
               Resource: !GetAtt SwagTable.Arn
+            - Effect: Allow
+              Action: events:PutEvents
+              Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
       Environment:
         Variables:
           TABLE_NAME: !Ref SwagTable
@@ -98,19 +110,133 @@ Resources:
             Path: /swag
             Method: POST
 
-  # PublicReadPolicy:
-  #   Type: "AWS::S3::BucketPolicy"
-  #   Properties:
-  #     Bucket: !Ref SwagBucket
-  #     PolicyDocument:
-  #       Statement:
-  #         - Effect: "Allow"
-  #           Principal: "*"
-  #           Action: s3:GetObject
-  #           Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/*
-  #           Condition:
-  #             StringEquals:
-  #               "s3:prefix": "public/"
+  GetSwagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/get-swag
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource: !Sub ${SwagTable.Arn}/index/types
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref SwagTable
+      Events:
+        FromApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SwagApi
+            Path: /swag
+            Method: GET
+
+  UpvoteSwagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/upvote-swag
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:UpdateItem
+              Resource: !GetAtt SwagTable.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref SwagTable
+      Events:
+        FromApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SwagApi
+            Path: /swag/{from}/{type}/upvotes
+            Method: POST
+
+  CreateSwagEmbeddingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/create-swag-embedding
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref MomentoSecret
+      Environment:
+        Variables:
+          SECRET_ID: !Ref MomentoSecret
+      Events:
+        EmbeddingEvent:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - swag hunt
+              detail-type:
+                - Create Embedding
+
+  SearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/search
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref MomentoSecret
+      Environment:
+        Variables:
+          SECRET_ID: !Ref MomentoSecret
+      Events:
+        FromApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SwagApi
+            Path: /swag/search
+            Method: POST
+
+  GetUploadUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/get-upload-url
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: s3:PutObject
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/quarantine/*
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref MomentoSecret
+      Environment:
+        Variables:
+          SECRET_ID: !Ref MomentoSecret
+          BUCKET_NAME: !Ref SwagBucket
+          CACHE_NAME: !Ref DefaultCache
+      Events:
+        FromApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SwagApi
+            Path: /swag/uploads
+            Method: GET
 
   ProcessSwagStateMachine:
     Type: AWS::Serverless::StateMachine
@@ -122,6 +248,7 @@ Resources:
         S3DeleteObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:deleteObject
         S3HeadObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:headObject
         S3CopyObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:copyObject
+        S3PutObjectAcl: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:putObjectAcl
         DynamoDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
         LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
         EventBridgePutEvents: !Sub arn:${AWS::Partition}:states:::events:putEvents
@@ -182,7 +309,16 @@ Resources:
       Policies:
         - Statement:
             - Effect: Allow
-              Action: 'bedrock:InvokeModel'
+              Action: bedrock:InvokeModel
               Resource: '*'
 
-
+  MomentoSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      SecretString:
+        Fn::Sub:
+          - |-
+            {
+              "momento": "${MomentoApiKey}"
+            }
+          - MomentoApiKey: !Ref MomentoApiKey

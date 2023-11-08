@@ -17,10 +17,16 @@ x-amazon-apigateway-gateway-responses:
     responseParameters:
       gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
 
+tags:
+  - name: Swag
+  - name: Voting
+
 paths:
   /swag:
     post:
       summary: Add a new piece of swag
+      tags:
+        - Swag
       requestBody:
         required: true
         content:
@@ -42,8 +48,189 @@ paths:
           Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AddSwagFunction.Arn}/invocations
         httpMethod: POST
         type: aws_proxy
+    get:
+      parameters:
+        - name: pageToken
+          required: false
+          in: query
+          schema:
+            type: string
+      summary: Gets a list of swag
+      tags:
+        - Swag
+      responses:
+        200:
+          description: The operation was successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  swag:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        from:
+                          type: string
+                        type:
+                          type: string
+                        url:
+                          type: string
+                        upvotes:
+                          type: integer
+                  pageToken:
+                    type: string
+                required:
+                  - swag
+      x-amazon-apigateway-request-validator: Validate All
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetSwagFunction.Arn}/invocations
+        httpMethod: POST
+        type: aws_proxy
+
+  /swag/uploads:
+    get:
+      summary: Gets a presigned url for uploading a new swag item
+      parameters:
+        - name: fileName
+          required: true
+          in: query
+          schema:
+            type: string
+            pattern: (?i)(?<=.{4,})\.(png|jpg|jpeg)$
+        - name: referenceNumber
+          required: false
+          in: query
+          schema:
+            type: string
+            minLength: 1
+      tags:
+        - Swag
+      responses:
+        200:
+          description: The operation was successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  presignedUrl:
+                    type: string
+                  referenceNumber:
+                    type: string
+                required:
+                  - presignedUrl
+                  - referenceNumber
+      x-amazon-apigateway-request-validator: Validate All
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUploadUrlFunction.Arn}/invocations
+        httpMethod: POST
+        type: aws_proxy
+        
+  /swag/search:
+    post:
+      summary: Search for swag
+      tags:
+        - Swag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  maxLength: 100
+                  minLength: 1
+              required:
+                - query
+      responses:
+        200:
+          description: The search completed successfully and the results are returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        from:
+                          type: string
+                        type:
+                          type: string
+                        url:
+                          type: string
+                      required:
+                        - from
+                        - type
+                        - url
+                required:
+                  - results
+        400:
+          $ref: '#/components/responses/BadRequest'
+        500:
+          $ref: '#/components/responses/UnknownError'
+      x-amazon-apigateway-request-validator: Validate All
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchFunction.Arn}/invocations
+        httpMethod: POST
+        type: aws_proxy
+
+  /swag/{from}/{type}/upvotes:
+    parameters:
+      - $ref: '#/components/parameters/from'
+      - $ref: '#/components/parameters/type'
+    post:
+      summary: Upvotes a piece of swag
+      tags:
+        - Voting
+      responses:
+        200:
+          description: The upvote was successful and the new value is returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  newValue:
+                    type: integer
+                required:
+                  - newValue
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/UnknownError'
+      x-amazon-apigateway-request-validator: Validate All
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpvoteSwagFunction.Arn}/invocations
+        httpMethod: POST
+        type: aws_proxy
 
 components:
+  parameters:
+    from:
+      name: from
+      description: Vendor who provided the swag
+      required: true
+      in: path
+      schema:
+        type: string
+    type:
+      name: type
+      description: Type of swag
+      required: true
+      in: path
+      schema:
+        type: string
   schemas:
     NewSwag:
       description: New piece of swag
@@ -65,6 +252,8 @@ components:
           items:
             type: string
         referenceNumber:
+          type: string
+        email:
           type: string
 
   responses:
@@ -92,6 +281,18 @@ components:
               message:
                 type: string
                 description: Message detailing what went wrong
+    NotFound:
+      description: The requested resource does not exist
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+                description: The resquested resource was not found
     Conflict:
       description: Could not process due to resource state
       content:

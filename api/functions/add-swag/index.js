@@ -1,9 +1,11 @@
+const { EventBridgeClient, PutEventsCommand } = require('@aws-sdk/client-eventbridge');
 const { DynamoDBClient, GetItemCommand, PutItemCommand } = require('@aws-sdk/client-dynamodb');
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
 const Filter = require('bad-words');
 const filter = new Filter({ placeHolder: '' });
 
 const ddb = new DynamoDBClient();
+const eventBridge = new EventBridgeClient();
 
 exports.handler = async (event) => {
   try {
@@ -27,8 +29,13 @@ exports.handler = async (event) => {
     if (filter.isProfane(vendor)) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: 'Please refrain from using profanity ' })
+        body: JSON.stringify({ message: 'Please refrain from using profanity' })
       }
+    }
+
+    let createdBy = body.createdBy;
+    if(createdBy && filter.isProfane(createdBy)){
+      createdBy = undefined;
     }
 
     const image = unmarshall(processedImage.Item);
@@ -39,21 +46,33 @@ exports.handler = async (event) => {
     }).filter(t => t);
 
     try {
+      const swag = {
+        pk: `${vendor}#${body.type}`,
+        sk: 'swag',
+        type: 'swag',
+        sort: 1,
+        image: image.url,
+        from: vendor,
+        swagType: body.type,
+        ...body.location && { location: filter.clean(body.location) },
+        ...tags.length && { tags },
+        ...createdBy && { createdBy }
+      };
+
       await ddb.send(new PutItemCommand({
         TableName: process.env.TABLE_NAME,
         ConditionExpression: 'attribute_not_exists(pk)',
-        Item: marshall({
-          pk: `${vendor}#${body.type}`,
-          sk: 'swag',
-          type: 'swag',
-          sort: new Date().toISOString(),
-          image: image.url,
-          from: vendor,
-          swagType: body.type,
-          ...body.location && { location: filter.clean(body.location) },
-          ...tags.length && { tags }
-        })
+        Item: marshall(swag)
       }));
+
+      await eventBridge.send(new PutEventsCommand({
+        Entries: [{
+          DetailType: 'Create Embedding',
+          Source: 'swag hunt',
+          Detail: JSON.stringify({ swag })
+        }]
+      }));
+
     } catch (error) {
       if (error.name == 'ConditionalCheckFailedException') {
         // That means someone has already submitted this swag. Add this as another entry for it.
