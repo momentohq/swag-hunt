@@ -53,7 +53,7 @@ exports.handler = async (event) => {
         sk: 'swag',
         type: 'swag',
         sort: 1,
-        image: image.url,
+        url: image.url,
         from: vendor,
         swagType: body.type,
         ...body.location && { location: filter.clean(body.location) },
@@ -83,7 +83,7 @@ exports.handler = async (event) => {
           Item: marshall({
             pk: `${vendor}#${body.type}`,
             sk: `additional#${body.referenceNumber}`,
-            image: image.url
+            url: image.url
           })
         }));
       } else {

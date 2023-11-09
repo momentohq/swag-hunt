@@ -12,36 +12,38 @@ import { useState } from 'react'
 import { useSwipeable } from 'react-swipeable'
 import { variants } from '../utils/animationVariants'
 import downloadPhoto from '../utils/downloadPhoto'
-import type { SwagSummary, SharedModalProps } from '../utils/types'
+import type { SharedModalProps } from '../utils/types'
 import Twitter from './Icons/Twitter'
 
 export default function SharedModal({
-  index,
+  from,
+  type,
+  mainImage,
   images,
-  changePhotoId,
-  closeModal,
-  navigation,
   currentPhoto,
+  changePhoto,
+  closeModal,
   direction,
 }: SharedModalProps) {
-  const [loaded, setLoaded] = useState(false)
+  const [loaded, setLoaded] = useState(false);
+  const navigation = images.length > 0;
+  let swagImages = [mainImage, ...images];
 
+  let index = 0;
 
   const handlers = useSwipeable({
     onSwipedLeft: () => {
-      if (index < images?.length - 1) {
-        changePhotoId(index + 1)
+      if (index < swagImages?.length - 1) {
+        changePhoto(swagImages[index + 1])
       }
     },
     onSwipedRight: () => {
       if (index > 0) {
-        changePhotoId(index - 1)
+        changePhoto(swagImages[index - 1])
       }
     },
     trackMouse: true,
   })
-
-  let currentImage = images ? images[index] : currentPhoto
 
   return (
     <MotionConfig
@@ -59,7 +61,7 @@ export default function SharedModal({
           <div className="relative flex aspect-[3/2] items-center justify-center">
             <AnimatePresence initial={false} custom={direction}>
               <motion.div
-                key={index}
+                key={currentPhoto}
                 custom={direction}
                 variants={variants}
                 initial="enter"
@@ -68,15 +70,11 @@ export default function SharedModal({
                 className="absolute"
               >
                 <Image
-                  src={`https://res.cloudinary.com/${
-                    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-                  }/image/upload/c_scale,${navigation ? 'w_1280' : 'w_1920'}/${
-                    currentImage.public_id
-                  }.${currentImage.format}`}
+                  src={currentPhoto}
                   width={navigation ? 1280 : 1920}
                   height={navigation ? 853 : 1280}
                   priority
-                  alt="Next.js Conf image"
+                  alt="Conference Swag"
                   onLoad={() => setLoaded(true)}
                 />
               </motion.div>
@@ -95,7 +93,7 @@ export default function SharedModal({
                     <button
                       className="absolute left-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
                       style={{ transform: 'translate3d(0, 0, 0)' }}
-                      onClick={() => changePhotoId(index - 1)}
+                      onClick={() => changePhoto(swagImages[index - 1])}
                     >
                       <ChevronLeftIcon className="h-6 w-6" />
                     </button>
@@ -104,7 +102,7 @@ export default function SharedModal({
                     <button
                       className="absolute right-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
                       style={{ transform: 'translate3d(0, 0, 0)' }}
-                      onClick={() => changePhotoId(index + 1)}
+                      onClick={() => changePhoto(swagImages[index + 1])}
                     >
                       <ChevronRightIcon className="h-6 w-6" />
                     </button>
@@ -114,7 +112,7 @@ export default function SharedModal({
               <div className="absolute top-0 right-0 flex items-center gap-2 p-3 text-white">
                 {navigation ? (
                   <a
-                    href={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${currentImage.public_id}.${currentImage.format}`}
+                    href={currentPhoto}
                     className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
                     target="_blank"
                     title="Open fullsize version"
@@ -124,7 +122,7 @@ export default function SharedModal({
                   </a>
                 ) : (
                   <a
-                    href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20pic%20from%20Next.js%20Conf!%0A%0Ahttps://nextjsconf-pics.vercel.app/p/${index}`}
+                    href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20at%20re:Invent!%0A%0Ahttps://swaghunt.io/${from}/${type}`}
                     className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
                     target="_blank"
                     title="Open fullsize version"
@@ -134,12 +132,7 @@ export default function SharedModal({
                   </a>
                 )}
                 <button
-                  onClick={() =>
-                    downloadPhoto(
-                      `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${currentImage.public_id}.${currentImage.format}`,
-                      `${index}.jpg`
-                    )
-                  }
+                  onClick={() => downloadPhoto(currentPhoto)}
                   className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
                   title="Download fullsize version"
                 >
@@ -168,38 +161,35 @@ export default function SharedModal({
                 className="mx-auto mt-6 mb-6 flex aspect-[3/2] h-14"
               >
                 <AnimatePresence initial={false}>
-                  {images.map(({ public_id, format, id }) => (
+                  {swagImages.map((url) => (
                     <motion.button
                       initial={{
                         width: '0%',
                         x: `${Math.max((index - 1) * -100, 15 * -100)}%`,
                       }}
                       animate={{
-                        scale: id === index ? 1.25 : 1,
+                        scale: url === currentPhoto ? 1.25 : 1,
                         width: '100%',
                         x: `${Math.max(index * -100, 15 * -100)}%`,
                       }}
                       exit={{ width: '0%' }}
-                      onClick={() => changePhotoId(id)}
-                      key={id}
-                      className={`${
-                        id === index
+                      onClick={() => changePhoto(url)}
+                      key={url}
+                      className={`${url === currentPhoto
                           ? 'z-20 rounded-md shadow shadow-black/50'
                           : 'z-10'
-                      } ${id === 0 ? 'rounded-l-md' : ''} ${
-                        id === images.length - 1 ? 'rounded-r-md' : ''
-                      } relative inline-block w-full shrink-0 transform-gpu overflow-hidden focus:outline-none`}
+                        } ${swagImages.indexOf(url) === 0 ? 'rounded-l-md' : ''} ${swagImages.indexOf(url) === swagImages.length - 1 ? 'rounded-r-md' : ''
+                        } relative inline-block w-full shrink-0 transform-gpu overflow-hidden focus:outline-none`}
                     >
                       <Image
                         alt="small photos on the bottom"
                         width={180}
                         height={120}
-                        className={`${
-                          id === index
+                        className={`${url === currentPhoto
                             ? 'brightness-110 hover:brightness-110'
                             : 'brightness-50 contrast-125 hover:brightness-75'
-                        } h-full transform object-cover transition`}
-                        src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/c_scale,w_180/${public_id}.${format}`}
+                          } h-full transform object-cover transition`}
+                        src={url}
                       />
                     </motion.button>
                   ))}

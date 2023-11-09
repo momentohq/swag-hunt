@@ -129,7 +129,7 @@ paths:
           Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUploadUrlFunction.Arn}/invocations
         httpMethod: POST
         type: aws_proxy
-        
+
   /swag/search:
     post:
       summary: Search for swag
@@ -181,6 +181,28 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchFunction.Arn}/invocations
+        httpMethod: POST
+        type: aws_proxy
+
+  /swag/{from}/{type}:
+    parameters:
+      - $ref: '#/components/parameters/from'
+      - $ref: '#/components/parameters/type'
+    get:
+      summary: Gets the detail of a specific piece of swag
+      tags:
+        - Swag
+      responses:
+        200:
+          description: The operation was successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/Swag'
+      x-amazon-apigateway-request-validator: Validate All
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetSwagDetailFunction.Arn}/invocations
         httpMethod: POST
         type: aws_proxy
 
@@ -255,6 +277,24 @@ components:
           type: string
         email:
           type: string
+
+    Swag:
+      type: object
+      properties:
+        from:
+          type: string
+        location:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+        upvotes:
+          type: number
+        additionalImages:
+          type: array
+          items:
+            type: string
 
   responses:
     Created:

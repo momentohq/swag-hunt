@@ -1,20 +1,12 @@
 /* eslint-disable no-unused-vars */
-export interface ImageProps {
-  id: number
-  height: string
-  width: string
-  public_id: string
-  format: string
-  blurDataUrl?: string
-}
-
 export interface SharedModalProps {
-  index: number
-  images?: SwagSummary[]
-  currentPhoto?: ImageProps
-  changePhotoId: (newVal: number) => void
+  from: string
+  type: string
+  mainImage: string
+  images?: string[]
+  currentPhoto?: string
+  changePhoto: (url: string) => void
   closeModal: () => void
-  navigation: boolean
   direction?: number
 }
 
@@ -26,10 +18,20 @@ export interface SwagSummary {
 }
 
 export interface SwagList {
-  swag: SwagSummary[]
+  swag: SwagSummary[],
+  pageToken: string
 }
 
 export interface UploadDetails {
   referenceNumber: string,
   presignedUrl: string
+}
+
+export interface SwagDetail {
+  from: string,
+  type: string,
+  url: string,
+  upvotes: number,
+  location: string,
+  additionalImages: string[]
 }

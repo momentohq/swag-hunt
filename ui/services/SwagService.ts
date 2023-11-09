@@ -1,4 +1,4 @@
-import { UploadDetails } from "../utils/types";
+import { SwagDetail, SwagList, UploadDetails } from "../utils/types";
 
 const SwagAPI: string = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -16,10 +16,7 @@ export const uploadPhoto = async ({ photo, referenceNumber }: UploadPhotoParams)
       queryParams.append('referenceNumber', referenceNumber);
     }
 
-    const response: Response = await fetch(`${SwagAPI}/swag/uploads?${queryParams.toString()}`, {
-      method: 'GET'
-    });
-
+    const response: Response = await fetch(`${SwagAPI}/swag/uploads?${queryParams.toString()}`, { method: 'GET' });
     if (!response.ok) {
       throw new Error('Failed to get upload url');
     }
@@ -49,3 +46,48 @@ export const uploadPhoto = async ({ photo, referenceNumber }: UploadPhotoParams)
     throw error;
   }
 };
+
+interface GetSwagDetailParams {
+  from: string,
+  type: string
+};
+
+export const getSwagDetail = async ({ from, type }: GetSwagDetailParams): Promise<SwagDetail | undefined> => {
+  try {
+    const response: Response = await fetch(`${SwagAPI}/swag/${from}/${type}`, { method: 'GET' });
+    if (!response.ok) {
+      throw new Error('Failed to get swag detail');
+    }
+
+    const swagDetail: SwagDetail = await response.json();
+    return swagDetail;
+
+  } catch (err) {
+    console.error(err);
+    return undefined;
+  }
+};
+
+interface GetSwagListParams {
+  pageToken?: string
+}
+
+export const getSwagList = async ({ pageToken }: GetSwagListParams): Promise<SwagList> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (pageToken) {
+      queryParams.append('pageToken', pageToken)
+    }
+
+    const response: Response = await fetch(`${SwagAPI}/swag?${queryParams.toString()}`, { method: 'GET' });
+    if (!response.ok) {
+      throw new Error('Failed to fetch swag list');
+    }
+
+    const swagList: SwagList = await response.json();
+    return swagList;
+  } catch (err) {
+    console.error(err);
+    return { swag: [], pageToken: undefined };
+  }
+}

@@ -24,7 +24,7 @@ exports.handler = async (event) => {
       return {
         from: data.from,
         type: data.swagType,
-        url: data.image,
+        url: data.url,
         upvotes: data.sort
       };
     }) ?? [];

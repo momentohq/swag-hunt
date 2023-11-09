@@ -27,7 +27,7 @@ exports.handler = async (event) => {
         metadata: {
           from: swag.from,
           type: swag.swagType,
-          url: swag.image
+          url: swag.url
         }
       }
     ]);

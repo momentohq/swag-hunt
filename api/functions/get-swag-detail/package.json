@@ -1,0 +1,19 @@
+{
+  "name": "get-swag-detail",
+  "version": "1.0.0",
+  "description": "Gets the details and additional images for a specific piece of swag",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.445.0",
+    "@aws-sdk/client-secrets-manager": "^3.445.0",
+    "@aws-sdk/util-dynamodb": "^3.445.0"
+  },
+  "dependencies": {
+    "@gomomento/sdk": "^1.47.1"
+  }
+}

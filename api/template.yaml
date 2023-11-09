@@ -78,6 +78,12 @@ Resources:
               - PUT
             AllowedHeaders:
               - '*'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+
   SwagApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -248,6 +254,34 @@ Resources:
           Properties:
             RestApiId: !Ref SwagApi
             Path: /swag/uploads
+            Method: GET
+
+  GetSwagDetailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/get-swag-detail
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource: !GetAtt SwagTable.Arn
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref MomentoSecret
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref SwagTable
+          SECRET_ID: !Ref MomentoSecret
+      Events:
+        FromApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SwagApi
+            Path: /swag/{from}/{type}
             Method: GET
 
   ProcessSwagStateMachine:
