@@ -34,14 +34,16 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         swag,
         ...results.LastEvaluatedKey && { pageToken: results.LastEvaluatedKey }
-      })
+      }),
+      headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
     };
   }
   catch (err) {
     console.error(err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Something went wrong' })
+      body: JSON.stringify({ message: 'Something went wrong' }),
+      headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
     }
   }
 };

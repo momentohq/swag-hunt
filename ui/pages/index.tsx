@@ -63,6 +63,7 @@ const Home: NextPage = ({ images }: { images: SwagSummary[] }) => {
             <h1 className="mt-8 mb-4 text-base font-bold uppercase tracking-widest">
               2022 Event Photos
             </h1>
+            <input className="w-fill"/>
             <p className="max-w-[40ch] text-white/75 sm:max-w-[32ch]">
               Want to add some swag? <button onClick={() => setShowAddSwag(true)}>Click Here!</button>
             </p>
@@ -75,11 +76,11 @@ const Home: NextPage = ({ images }: { images: SwagSummary[] }) => {
               Clone and Deploy
             </a>
           </div>
-          {images.map(({ id, public_id, format, blurDataUrl }) => (
+          {images.map(({ from, type, url, upvotes}) => (
             <Link
-              key={id}
-              href={`/?photoId=${id}`}
-              as={`/p/${id}`}
+              key={`${from}#${type}`}
+              href={`/?swag=${from}#${type}`}
+              as={`/s/${from}#${type}`}
               ref={id === Number(lastViewedPhoto) ? lastViewedPhotoRef : null}
               shallow
               className="after:content group relative mb-5 block w-full cursor-zoom-in after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight"

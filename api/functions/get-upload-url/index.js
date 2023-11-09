@@ -21,7 +21,8 @@ exports.handler = async (event) => {
       } else if (result instanceof CacheGet.Hit) {
         return {
           statusCode: 200,
-          body: result.value()
+          body: result.value(),
+          headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
         };
       }
     }
@@ -54,13 +55,15 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: response
+      body: response,
+      headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
     };
   } catch (err) {
     console.error(err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Something went wrong' })
+      body: JSON.stringify({ message: 'Something went wrong' }),
+      headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
     }
   }
 };

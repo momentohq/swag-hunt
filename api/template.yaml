@@ -11,6 +11,9 @@ Parameters:
   DefaultCache:
     Type: String
     Default: reinvent
+  CORSOrigin:
+    Type: String
+    Default: '*'
 
 Globals:
   Function:
@@ -24,6 +27,7 @@ Globals:
     Environment:
       Variables:
         AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+        CORS_ORIGIN: !Ref CORSOrigin
   Api:
     Cors:
       AllowMethods: "'POST,GET,PUT,OPTIONS'"
@@ -65,7 +69,15 @@ Resources:
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
-
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - https://swaghunt.io
+              - http://localhost:3000
+            AllowedMethods:
+              - PUT
+            AllowedHeaders:
+              - '*'
   SwagApi:
     Type: AWS::Serverless::Api
     Properties:

@@ -21,7 +21,8 @@ exports.handler = async (event) => {
     if (!processedImage.Item) {
       return {
         statusCode: 409,
-        body: JSON.stringify({ message: 'There is no verified image with the provided reference number' })
+        body: JSON.stringify({ message: 'There is no verified image with the provided reference number' }),
+        headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
       };
     }
 
@@ -29,7 +30,8 @@ exports.handler = async (event) => {
     if (filter.isProfane(vendor)) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: 'Please refrain from using profanity' })
+        body: JSON.stringify({ message: 'Please refrain from using profanity' }),
+        headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
       }
     }
 
@@ -92,7 +94,8 @@ exports.handler = async (event) => {
     console.error(err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Something went wrong' })
+      body: JSON.stringify({ message: 'Something went wrong' }),
+      headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
     };
   }
 }

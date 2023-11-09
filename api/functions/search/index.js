@@ -18,7 +18,8 @@ exports.handler = async (event) => {
     if (cachedResult) {
       return {
         statusCode: 200,
-        body: JSON.stringify({ results: cachedResult })
+        body: JSON.stringify({ results: cachedResult }),
+        headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
       };
     }
 
@@ -39,14 +40,16 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        body: JSON.stringify({ results })
+        body: JSON.stringify({ results }),
+        headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
       };
     }
   } catch (err) {
     console.error(err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Something went wrong' })
+      body: JSON.stringify({ message: 'Something went wrong' }),
+      headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
     };
   }
 };

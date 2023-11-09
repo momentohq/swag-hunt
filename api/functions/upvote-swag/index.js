@@ -28,7 +28,8 @@ exports.handler = async (event) => {
     const newValue = Number(response.Attributes.sort.N);
     return {
       statusCode: 200,
-      body: JSON.stringify({ newValue })
+      body: JSON.stringify({ newValue }),
+      headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
     };
   } catch (err) {
     console.error(err);
@@ -36,12 +37,14 @@ exports.handler = async (event) => {
       // That means the swag doesn't exist
       return {
         statusCode: 404,
-        body: JSON.stringify({ message: 'The swag you are trying to upvote does not exist' })
+        body: JSON.stringify({ message: 'The swag you are trying to upvote does not exist' }),
+        headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
       };
     } else {
       return {
         statusCode: 500,
-        body: JSON.stringify({ message: 'Something went wrong' })
+        body: JSON.stringify({ message: 'Something went wrong' }),
+        headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
       };
     }
   }

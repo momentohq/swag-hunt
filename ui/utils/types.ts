@@ -28,3 +28,8 @@ export interface SwagSummary {
 export interface SwagList {
   swag: SwagSummary[]
 }
+
+export interface UploadDetails {
+  referenceNumber: string,
+  presignedUrl: string
+}

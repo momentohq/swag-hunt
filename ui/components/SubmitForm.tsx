@@ -2,8 +2,8 @@ import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/router'
 import { Dialog } from '@headlessui/react'
-import short from 'short-uuid';
 import { swagTypes } from '../utils/swag';
+import { uploadPhoto } from '../services/SwagService';
 
 interface FormData {
   image: File | null;
@@ -25,7 +25,7 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     email: '',
     swagType: 'other'
   });
-  const [refNumber, setRefNumber] = useState<string>(short.generate());
+  const [refNumber, setRefNumber] = useState<string>();
   const tagInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -37,6 +37,7 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       setFormData({ ...formData, image: event.target.files[0] });
+      uploadPhoto({ photo: event.target.files[0], referenceNumber: refNumber });
     }
   };
 
@@ -75,44 +76,46 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       />
-      <form onSubmit={handleSubmit} className="flex flex-col p-4 space-y-6 bg-white shadow-md rounded-lg z-50">
+      <form onSubmit={handleSubmit} className="mb-5 flex h-fit flex-col justify-end gap-4 overflow-hidden rounded-lg bg-white/10 px-6 pb-8 text-center text-white shadow-highlight lg:pt-0 z-50">
+        <h1 className="text-center text-3xl font-bold mt-4">Found some swag?</h1>
+        <hr />
         <label className="block">
-          <span className="text-gray-700">Image</span>
+          <span className="block text-left">Swag Photo</span>
           <input type="file" onChange={handleImageChange} className="block w-full mt-1" />
         </label>
 
         <label className="block">
-          <span className="text-gray-700">Who gave this to you?</span>
+          <span className="block text-left">Who gave this to you?</span>
           <input
             type="text"
             name="vendor"
             value={formData.vendor}
             onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
             placeholder="Was it a vendor?"
           />
         </label>
 
         <label className="block">
-          <span className="text-gray-700">Where did you get it?</span>
+          <span className="block text-left">Where did you get it?</span>
           <input
             type="text"
             name="location"
             value={formData.location}
             onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
             placeholder="Be specific"
           />
         </label>
 
         <label className="block">
-          <span className="text-gray-700">Type</span>
+          <span className="block text-left">Type</span>
           <select
             name="swagType"
             required
             value={formData.swagType}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-            >
+            className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
+          >
             {swagTypes.map(t => (
               <option key={t} value={t}>{t}</option>
             ))}
@@ -120,17 +123,17 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
         </label>
 
         <label className="block">
-          <span className="text-gray-700">Tags</span>
+          <span className="block text-left">Tags</span>
           <input
             type="text"
             ref={tagInputRef}
             onKeyDown={handleTagAddition}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
             placeholder="Enter tags and press Enter"
           />
-          <div className="mt-2">
+          <div className="mt-3">
             {formData.tags.map((tag, index) => (
-              <span key={index} className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">
+              <span key={index} className="inline-block bg-momento-light-mint text-black text-xs font-semibold mr-2 px-2.5 py-1 rounded-lg">
                 {tag}
               </span>
             ))}
@@ -138,18 +141,18 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
         </label>
 
         <label className="block">
-          <span className="text-gray-700">Email</span>
+          <span className="block text-left">Email</span>
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
             placeholder="(Optional) Enter for a raffle entry"
           />
         </label>
 
-        <button type="submit" className="py-2 px-4 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none">
+        <button type="submit" className="py-2 px-4 mt-2 bg-momento-mint-green text-black font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none">
           Submit
         </button>
       </form>
