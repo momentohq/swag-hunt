@@ -7,3 +7,15 @@
     clip-path: inset(0.6px);
   }
 }
+
+.linkButton {
+  background-color: transparent;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0; 
+}
+
+.linkButton:hover {
+  color: #0056b3; /* Darker blue on hover */
+}

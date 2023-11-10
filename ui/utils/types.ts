@@ -14,12 +14,12 @@ export interface SwagSummary {
   from: string,
   type: string,
   url: string,
-  upvotes: number
+  upvotes?: number
 }
 
 export interface SwagList {
   swag: SwagSummary[],
-  pageToken: string
+  pageToken?: string
 }
 
 export interface UploadDetails {
@@ -34,4 +34,19 @@ export interface SwagDetail {
   upvotes: number,
   location: string,
   additionalImages: string[]
+}
+
+export interface NewSwag {
+  from: string
+  type: string
+  referenceNumber: string
+  location?: string
+  tags?: string[]
+  email?: string
+}
+
+export interface NewSwagResponse {
+  from?: string
+  type?: string
+  message?: string
 }

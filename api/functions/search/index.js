@@ -40,7 +40,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        body: JSON.stringify({ results }),
+        body: JSON.stringify({ swag: results }),
         headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
       };
     }

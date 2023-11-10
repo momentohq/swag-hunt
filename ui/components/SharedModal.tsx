@@ -110,27 +110,24 @@ export default function SharedModal({
                 </>
               )}
               <div className="absolute top-0 right-0 flex items-center gap-2 p-3 text-white">
-                {navigation ? (
-                  <a
-                    href={currentPhoto}
-                    className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
-                    target="_blank"
-                    title="Open fullsize version"
-                    rel="noreferrer"
-                  >
-                    <ArrowTopRightOnSquareIcon className="h-5 w-5" />
-                  </a>
-                ) : (
-                  <a
-                    href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20at%20re:Invent!%0A%0Ahttps://swaghunt.io/${from}/${type}`}
-                    className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
-                    target="_blank"
-                    title="Open fullsize version"
-                    rel="noreferrer"
-                  >
-                    <Twitter className="h-5 w-5" />
-                  </a>
-                )}
+                <a
+                  href={currentPhoto}
+                  className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                  target="_blank"
+                  title="Open fullsize version"
+                  rel="noreferrer"
+                >
+                  <ArrowTopRightOnSquareIcon className="h-5 w-5" />
+                </a>
+                <a
+                  href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20I%20found%20at%20re:Invent!%0A%0Ahttps://swaghunt.io/${from}/${type}/`}
+                  className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                  target="_blank"
+                  title="Open fullsize version"
+                  rel="noreferrer"
+                >
+                  <Twitter className="h-5 w-5" />
+                </a>
                 <button
                   onClick={() => downloadPhoto(currentPhoto)}
                   className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
@@ -176,8 +173,8 @@ export default function SharedModal({
                       onClick={() => changePhoto(url)}
                       key={url}
                       className={`${url === currentPhoto
-                          ? 'z-20 rounded-md shadow shadow-black/50'
-                          : 'z-10'
+                        ? 'z-20 rounded-md shadow shadow-black/50'
+                        : 'z-10'
                         } ${swagImages.indexOf(url) === 0 ? 'rounded-l-md' : ''} ${swagImages.indexOf(url) === swagImages.length - 1 ? 'rounded-r-md' : ''
                         } relative inline-block w-full shrink-0 transform-gpu overflow-hidden focus:outline-none`}
                     >
@@ -186,8 +183,8 @@ export default function SharedModal({
                         width={180}
                         height={120}
                         className={`${url === currentPhoto
-                            ? 'brightness-110 hover:brightness-110'
-                            : 'brightness-50 contrast-125 hover:brightness-75'
+                          ? 'brightness-110 hover:brightness-110'
+                          : 'brightness-50 contrast-125 hover:brightness-75'
                           } h-full transform object-cover transition`}
                         src={url}
                       />

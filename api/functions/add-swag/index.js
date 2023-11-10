@@ -36,16 +36,16 @@ exports.handler = async (event) => {
     }
 
     let createdBy = body.createdBy;
-    if(createdBy && filter.isProfane(createdBy)){
+    if (createdBy && filter.isProfane(createdBy)) {
       createdBy = undefined;
     }
 
     const image = unmarshall(processedImage.Item);
-    const tags = body.tags.map(tag => {
+    const tags = body.tags?.map(tag => {
       if (!filter.isProfane(tag)) {
         return tag.toLowerCase();
       }
-    }).filter(t => t);
+    })?.filter(t => t) ?? [];
 
     try {
       const swag = {
@@ -75,6 +75,11 @@ exports.handler = async (event) => {
         }]
       }));
 
+      return {
+        statusCode: 201,
+        body: JSON.stringify({ from: vendor, type: body.type }),
+        headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
+      };
     } catch (error) {
       if (error.name == 'ConditionalCheckFailedException') {
         // That means someone has already submitted this swag. Add this as another entry for it.
@@ -86,6 +91,11 @@ exports.handler = async (event) => {
             url: image.url
           })
         }));
+        return {
+          statusCode: 201,
+          body: JSON.stringify({ from: vendor, type: body.type }),
+          headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
+        };
       } else {
         throw error;
       }

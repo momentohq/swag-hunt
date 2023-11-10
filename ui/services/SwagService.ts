@@ -1,4 +1,4 @@
-import { SwagDetail, SwagList, UploadDetails } from "../utils/types";
+import { NewSwag, NewSwagResponse, SwagDetail, SwagList, UploadDetails } from "../utils/types";
 
 const SwagAPI: string = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -85,9 +85,38 @@ export const getSwagList = async ({ pageToken }: GetSwagListParams): Promise<Swa
     }
 
     const swagList: SwagList = await response.json();
+    console.log(swagList)
     return swagList;
   } catch (err) {
     console.error(err);
-    return { swag: [], pageToken: undefined };
+    return { swag: [] };
+  }
+}
+
+export const saveSwag = async (swag: NewSwag): Promise<NewSwagResponse> => {
+  try {
+    const response: Response = await fetch(`${SwagAPI}/swag`, {
+      method: 'POST',
+      body: JSON.stringify(swag)
+    });
+
+    return await response.json() as NewSwagResponse;
+  } catch (err) {
+    console.error(err);
+    return { message: 'Something went wrong submitting your swag. Please try again.' };
+  }
+}
+
+export const swagSearch = async (query: string): Promise<SwagList> => {
+  try {
+    const response: Response = await fetch(`${SwagAPI}/swag/search`, {
+      method: 'POST',
+      body: JSON.stringify({query})
+    });
+
+    return await response.json() as SwagList;
+  } catch (err) {
+    console.error(err);
+    return { swag: [] };
   }
 }

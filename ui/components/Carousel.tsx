@@ -1,19 +1,20 @@
-import Image from 'next/image'
+import React, { useState } from 'react';
 import { useRouter } from 'next/router'
 import useKeypress from 'react-use-keypress'
 import type { SwagDetail } from '../utils/types'
 import SharedModal from './SharedModal'
+import { toTitleCase } from '../utils/titleCase';
 
 export default function Carousel({ swag }: { swag: SwagDetail }) {
   const router = useRouter()
-  let currentPhoto = swag.url;
+  const [currentPhoto, setCurrentPhoto] = useState<string>(swag.url);
 
   function closeModal() {
     router.push('/', undefined, { shallow: true })
   }
 
   function changePhoto(newUrl: string) {
-    currentPhoto = newUrl;
+    setCurrentPhoto(newUrl);
   }
 
   useKeypress('Escape', () => {
@@ -21,19 +22,15 @@ export default function Carousel({ swag }: { swag: SwagDetail }) {
   })
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center">
+    <div className="fixed inset-0 flex flex-col items-center justify-center">
       <button
-        className="absolute inset-0 z-30 cursor-default bg-black backdrop-blur-2xl"
+        className="absolute inset-0 z-30 cursor-default bg-black backdrop-blur-2xl text-white"
         onClick={closeModal}
-      >
-        <Image
-          src={currentPhoto}
-          className="pointer-events-none h-full w-full"
-          alt="blurred background"
-          fill
-          priority={true}
-        />
-      </button>
+      />
+      <div className="text-white z-50 mb-4 text-center">
+        <p className="text-2xl">{`${toTitleCase(swag.from)} ${toTitleCase(swag.type)}`}</p>
+        {swag.location && <p className="text-xl mt-1">Found at {swag.location}</p>}
+      </div>
       <SharedModal
         from={swag.from}
         type={swag.type}

@@ -35,7 +35,19 @@ paths:
               $ref: '#/components/schemas/NewSwag'
       responses:
         201:
-          $ref: '#/components/responses/Created'
+          description: The new swag was added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from:
+                    type: string
+                  type:
+                    type: string
+                required:
+                  - from
+                  - type
         400:
           $ref: '#/components/responses/BadRequest'
         409:
@@ -156,7 +168,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  results:
+                  swag:
                     type: array
                     items:
                       type: object

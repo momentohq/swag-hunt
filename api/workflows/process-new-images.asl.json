@@ -4,7 +4,7 @@
   "States": {
     "Moderate and Get Detail": {
       "Type": "Parallel",
-      "Next": "Check For Inappropriate Content",
+      "Next": "Had to Downscale?",
       "Branches": [
         {
           "StartAt": "Moderate Photo",
@@ -20,6 +20,40 @@
                 }
               },
               "Resource": "${DetectModerationLabels}",
+              "End": true,
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "Rekognition.ImageTooLargeException"
+                  ],
+                  "Next": "Downscale Photo",
+                  "ResultPath": null
+                }
+              ]
+            },
+            "Downscale Photo": {
+              "Type": "Task",
+              "Resource": "${LambdaInvoke}",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${DownscalePhotoFunction}",
+                "Payload": {
+                  "key.$": "$$.Execution.Input.detail.object.key"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
               "End": true
             }
           }
@@ -257,6 +291,70 @@
     },
     "Success": {
       "Type": "Succeed"
+    },
+    "Had to Downscale?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.imageDetail[0].downscale_success",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.imageDetail[0].downscale_success",
+              "BooleanEquals": true
+            }
+          ],
+          "Next": "Success"
+        },
+        {
+          "And": [
+            {
+              "Variable": "$.imageDetail[0].downscale_success",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.imageDetail[0].downscale_success",
+              "BooleanEquals": false
+            }
+          ],
+          "Next": "Format Invalid Photo Message"
+        }
+      ],
+      "Default": "Check For Inappropriate Content"
+    },
+    "Format Invalid Photo Message": {
+      "Type": "Pass",
+      "Parameters": {
+        "topicName.$": "$.imageDetail[1].Metadata.referencenumber",
+        "message": {
+          "result": "Rejected",
+          "message": "Could not process photo. Please choose a different one."
+        }
+      },
+      "Next": "Send Failure Message"
+    },
+    "Send Failure Message": {
+      "Type": "Task",
+      "Resource": "${EventBridgePutEvents}",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "cacheName": "reinvent",
+              "topicName.$": "$.topicName",
+              "message.$": "States.Base64Encode(States.JsonToString($.message))"
+            },
+            "DetailType": "topicPublish",
+            "Source": "ProcessSwagStateMachine"
+          }
+        ]
+      },
+      "Next": "Failed to Process Image"
+    },
+    "Failed to Process Image": {
+      "Type": "Fail"
     }
   }
 }

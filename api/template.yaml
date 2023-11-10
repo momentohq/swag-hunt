@@ -52,7 +52,7 @@ Resources:
         - AttributeName: type
           AttributeType: S
         - AttributeName: sort
-          AttributeType: S
+          AttributeType: N
       GlobalSecondaryIndexes:
         - IndexName: types
           KeySchema:
@@ -66,6 +66,9 @@ Resources:
   SwagBucket:
     Type: AWS::S3::Bucket
     Properties:
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
       NotificationConfiguration:
         EventBridgeConfiguration:
           EventBridgeEnabled: true
@@ -284,6 +287,35 @@ Resources:
             Path: /swag/{from}/{type}
             Method: GET
 
+  DownscalePhotoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/downscale-photo
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/quarantine/*
+      Layers:
+        - !Ref SharpLayer
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref SwagBucket
+
+  SharpLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: sharp-layer
+      Description: Sharp library for image processing
+      ContentUri: layers/sharp-layer.zip
+      CompatibleRuntimes:
+        - nodejs14.x
+        - nodejs18.x
+
   ProcessSwagStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
@@ -301,6 +333,7 @@ Resources:
         SwagBucket: !Ref SwagBucket
         SwagTable: !Ref SwagTable
         GetSwagTypeFunction: !GetAtt GetSwagTypeFunction.Arn
+        DownscalePhotoFunction: !GetAtt DownscalePhotoFunction.Arn
       Policies:
         - Version: 2012-10-17
           Statement:
@@ -323,7 +356,9 @@ Resources:
               Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/public/*
             - Effect: Allow
               Action: lambda:InvokeFunction
-              Resource: !GetAtt GetSwagTypeFunction.Arn
+              Resource:
+                - !GetAtt GetSwagTypeFunction.Arn
+                - !GetAtt DownscalePhotoFunction.Arn
             - Effect: Allow
               Action: events:PutEvents
               Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
