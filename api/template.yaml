@@ -76,6 +76,7 @@ Resources:
         CorsRules:
           - AllowedOrigins:
               - https://swaghunt.io
+              - https://www.swaghunt.io
               - http://localhost:3000
             AllowedMethods:
               - PUT

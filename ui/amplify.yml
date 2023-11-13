@@ -7,6 +7,7 @@ applications:
             - npm ci
         build:
           commands:
+            - env | grep -e MOMENTO_AUTH >> .env.production
             - env | grep -e ^NEXT_PUBLIC >> .env.production
             - npm run build
       artifacts:
@@ -17,3 +18,12 @@ applications:
         paths:
           - node_modules/**/*
     appRoot: ui
+  - backend:
+    phases:
+      build:
+        commands:
+          - wget https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip
+          - unzip aws-sam-cli-linux-x86_64.zip -d sam-installation
+          - sudo ./sam-installation/install
+          - sam build --parallel --cached
+    appRoot: api
