@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/router'
 import { Dialog } from '@headlessui/react'
-import { swagTypes } from '../utils/swag';
 import { saveSwag, uploadPhoto } from '../services/SwagService';
 import { TopicClient, CredentialProvider, Configurations, TopicSubscribe, TopicItem } from '@gomomento/sdk-web';
 import { TailSpin } from 'react-loading-icons';
@@ -14,7 +13,6 @@ interface FormData {
   location: string;
   tags: string[];
   email: string;
-  swagType: string;
 }
 
 interface Token {
@@ -37,8 +35,7 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     from: '',
     location: '',
     tags: [],
-    email: '',
-    swagType: 'other'
+    email: ''
   });
   const [refNumber, setRefNumber] = useState<string>();
   const [subscription, setSubscription] = useState<TopicSubscribe.Subscription>();
@@ -61,11 +58,10 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitError('');
-    
+
     const newSwag: NewSwag = {
       referenceNumber: refNumber,
       from: formData.from,
-      type: formData.swagType,
       ...formData.location && { location: formData.location },
       ...formData.tags?.length && { tags: formData.tags },
       ...formData.email && { email: formData.email }
@@ -123,7 +119,7 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     try {
       const message: Message = JSON.parse(decodedMessage);
       if (message.result == 'Succeeded') {
-        updateFormData({ ...formDataRef.current, swagType: message.type, tags: message.tags });
+        updateFormData({ ...formDataRef.current, tags: message.tags });
         setCanSubmit(true)
       } else {
         updateFormData({ ...formDataRef.current, image: null });
@@ -217,21 +213,6 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
             className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
             placeholder="Be specific"
           />
-        </label>
-
-        <label className="block">
-          <span className="block text-left">Type</span>
-          <select
-            name="swagType"
-            required
-            value={formData.swagType}
-            onChange={handleSelectChange}
-            className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
-          >
-            {swagTypes.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
         </label>
 
         <label className="block">

@@ -1,0 +1,204 @@
+{
+  "Comment": "Add swag to index if it was successfully processed",
+  "StartAt": "Get Image Processing Record",
+  "States": {
+    "Get Image Processing Record": {
+      "Type": "Task",
+      "Resource": "${DynamoDBGetItem}",
+      "Parameters": {
+        "TableName": "${SwagTable}",
+        "Key": {
+          "pk": {
+            "S.$": "$$.Execution.Input.referenceNumber"
+          },
+          "sk": {
+            "S": "image"
+          }
+        }
+      },
+      "Next": "Choice"
+    },
+    "Choice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.Item.status.S",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.Item.status.S",
+              "StringEquals": "Processing"
+            }
+          ],
+          "Next": "Wait"
+        },
+        {
+          "And": [
+            {
+              "Variable": "$.Item.status.S",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.Item.status.S",
+              "StringEquals": "Success"
+            }
+          ],
+          "Next": "Is New Swag?"
+        }
+      ],
+      "Default": "Delete Swag Record"
+    },
+    "Delete Swag Record": {
+      "Type": "Task",
+      "Resource": "${DynamoDBDeleteItem}",
+      "Parameters": {
+        "TableName": "MyDynamoDBTable",
+        "Key": {
+          "pk": {
+            "S.$": "$$.Execution.Input.swagKey"
+          },
+          "sk": {
+            "S": "swag"
+          }
+        }
+      },
+      "Next": "Has Contact Info?"
+    },
+    "Has Contact Info?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$$.Execution.Input.createdBy",
+          "IsPresent": true,
+          "Next": "Format Failed to Add Swag Message"
+        }
+      ],
+      "Default": "Did Not Add Swag"
+    },
+    "Format Failed to Add Swag Message": {
+      "Type": "Pass",
+      "Parameters": {
+        "topicName.$": "$$.Execution.Input.createdBy",
+        "message": {
+          "result": "Failed",
+          "message": "Something went wrong processing your swag. Please try again"
+        }
+      },
+      "Next": "Send Failure Notification"
+    },
+    "Send Failure Notification": {
+      "Type": "Task",
+      "Resource": "${EventBridgePutEvents}",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "cacheName": "reinvent",
+              "topicName.$": "$.topicName",
+              "message.$": "States.Base64Encode(States.JsonToString($.message))"
+            },
+            "DetailType": "topicPublish",
+            "Source": "AddSwagStateMachine"
+          }
+        ]
+      },
+      "Next": "Did Not Add Swag"
+    },
+    "Did Not Add Swag": {
+      "Type": "Fail",
+      "Error": "SwagNotAdded"
+    },
+    "Wait": {
+      "Type": "Wait",
+      "Seconds": 5,
+      "Next": "Get Image Processing Record"
+    },
+    "Is New Swag?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$$.Execution.Input.isNewSwag",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$$.Execution.Input.isNewSwag",
+              "BooleanEquals": true
+            }
+          ],
+          "Next": "Save Swag"
+        }
+      ],
+      "Default": "Create Additional Item Record"
+    },
+    "Create Additional Item Record": {
+      "Type": "Task",
+      "Resource": "${DynamoDBPutItem}",
+      "Parameters": {
+        "TableName": "${SwagTable}",
+        "Item": {
+          "pk": {
+            "S.$": "$$.Execution.Input.swagKey"
+          },
+          "sk": {
+            "S.$": "$$.Execution.Input.swagSk"
+          },
+          "url": {
+            "S.$": "$.Item.url.S"
+          }
+        }
+      },
+      "Next": "Success"
+    },
+    "Save Swag": {
+      "Type": "Task",
+      "Resource": "${LambdaInvoke}",
+      "Parameters": {
+        "Payload": {
+          "input.$": "$$.Execution.Input",
+          "type.$": "$.Item.type.S",
+          "url.$": "$.Item.url.S"
+        },
+        "FunctionName": "${SaveSwagFunction}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Send Create Embedding Event",
+      "ResultPath": null
+    },
+    "Send Create Embedding Event": {
+      "Type": "Task",
+      "Resource": "${EventBridgePutEvents}",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "key.$": "$$.Execution.Input.swagKey"
+            },
+            "DetailType": "Create Embedding",
+            "Source": "swag hunt"
+          }
+        ]
+      },
+      "ResultPath": null,
+      "Next": "Success"
+    },
+    "Success": {
+      "Type": "Succeed"
+    }
+  }
+}

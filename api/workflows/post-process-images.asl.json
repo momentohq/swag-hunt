@@ -1,0 +1,225 @@
+{
+  "StartAt": "Get Swag Type",
+  "States": {
+    "Get Swag Type": {
+      "Type": "Task",
+      "Resource": "${LambdaInvoke}",
+      "ResultPath": "$.getSwagType",
+      "Parameters": {
+        "FunctionName": "${GetSwagTypeFunction}",
+        "Payload": {
+          "labels.$": "$.labels"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Is Valid Swag?"
+    },
+    "Is Valid Swag?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.getSwagType.Payload.type",
+          "StringEquals": "unknown",
+          "Next": "Set Image Status to Invalid"
+        }
+      ],
+      "Default": "Convert Image and Save"
+    },
+    "Set Image Status to Invalid": {
+      "Type": "Task",
+      "Resource": "${DynamoDBUpdateItem}",
+      "Parameters": {
+        "TableName": "${SwagTable}",
+        "Key": {
+          "pk": {
+            "S.$": "$$.Execution.Input.referenceNumber"
+          }
+        },
+        "UpdateExpression": "SET #status = :invalid REMOVE #url",
+        "ConditionExpression": "#lock.#startTime <= :startTime",
+        "ExpressionAttributeNames": {
+          "#status": "status",
+          "#url": "url",
+          "#lock": "lock",
+          "#startTime": "startTime"
+        },
+        "ExpressionAttributeValues": {
+          ":invalid": {
+            "S": "Invalid"
+          },
+          ":startTime": {
+            "S.$": "$$.Execution.Input.lockStartTime"
+          }
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "DynamoDB.ConditionalCheckFailedException"
+          ],
+          "Next": "Newer Execution is Running"
+        }
+      ],
+      "Next": "Build Failure Message"
+    },
+    "Build Failure Message": {
+      "Type": "Pass",
+      "Next": "Send No Swag Found Message",
+      "Parameters": {
+        "topicName.$": "$$.Execution.Input.referenceNumber",
+        "message": {
+          "result": "Rejected",
+          "message": "No swag was found in the provided image"
+        }
+      }
+    },
+    "Send No Swag Found Message": {
+      "Type": "Task",
+      "Resource": "${EventBridgePutEvents}",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "cacheName": "reinvent",
+              "topicName.$": "$.topicName",
+              "message.$": "States.Base64Encode(States.JsonToString($.message))"
+            },
+            "DetailType": "topicPublish",
+            "Source": "ProcessSwagStateMachine"
+          }
+        ]
+      },
+      "Next": "Image Does Not Contain Swag"
+    },
+    "Image Does Not Contain Swag": {
+      "Type": "Fail",
+      "Error": "NoSwagFound"
+    },
+    "Newer Execution is Running": {
+      "Type": "Succeed"
+    },
+    "Convert Image and Save": {
+      "Type": "Task",
+      "Resource": "${LambdaInvoke}",
+      "Parameters": {
+        "Payload": {
+          "key.$": "$$.Execution.Input.originalKey"
+        },
+        "FunctionName": "${ConvertToWebpFunction}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "S3 Operations",
+      "ResultPath": "$.converted"
+    },
+    "S3 Operations": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Delete Original",
+          "States": {
+            "Delete Original": {
+              "Type": "Task",
+              "Parameters": {
+                "Bucket": "${SwagBucket}",
+                "Key.$": "$$.Execution.Input.originalKey"
+              },
+              "Resource": "${S3DeleteObject}",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "PutObjectAcl",
+          "States": {
+            "PutObjectAcl": {
+              "Type": "Task",
+              "End": true,
+              "Parameters": {
+                "Bucket": "${SwagBucket}",
+                "Key.$": "$.converted.Payload.key",
+                "Acl": "public-read"
+              },
+              "Resource": "${S3PutObjectAcl}"
+            }
+          }
+        }
+      ],
+      "ResultPath": null,
+      "Next": "Set Image Status to Success"
+    },
+    "Set Image Status to Success": {
+      "Type": "Task",
+      "Resource": "${DynamoDBUpdateItem}",
+      "Parameters": {
+        "TableName": "${SwagTable}",
+        "Key": {
+          "pk": {
+            "S.$": "$$.Execution.Input.referenceNumber"
+          },
+          "sk": {
+            "S": "image"
+          }
+        },
+        "UpdateExpression": "SET #status = :success, #url = :url, #type = :type",
+        "ConditionExpression": "#lock.#startTime <= :startTime",
+        "ExpressionAttributeNames": {
+          "#status": "status",
+          "#url": "url",
+          "#lock": "lock",
+          "#startTime": "startTime",
+          "#type": "type"
+        },
+        "ExpressionAttributeValues": {
+          ":success": {
+            "S": "Success"
+          },
+          ":url": {
+            "S.$": "States.Format('https://assets.swaghunt.io/{}', $.converted.Payload.key)"
+          },
+          ":type": {
+            "S.$": "$.getSwagType.Payload.type"
+          },
+          ":startTime": {
+            "S.$": "$$.Execution.Input.lockStartTime"
+          }
+        }
+      },
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "DynamoDB.ConditionalCheckFailedException"
+          ],
+          "Next": "Newer Execution is Running"
+        }
+      ],
+      "Next": "Image successfully Processed"
+    },
+    "Image successfully Processed": {
+      "Type": "Succeed"
+    }
+  }
+}

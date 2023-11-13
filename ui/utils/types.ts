@@ -38,7 +38,6 @@ export interface SwagDetail {
 
 export interface NewSwag {
   from: string
-  type: string
   referenceNumber: string
   location?: string
   tags?: string[]

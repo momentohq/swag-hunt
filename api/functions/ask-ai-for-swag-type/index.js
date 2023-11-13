@@ -6,14 +6,12 @@ const swagTypes = ['shirt', 'hoodie', 'socks', 'sticker', 'hat', 'pin', 'toy', '
 
 exports.handler = async (state) => {
   try {
-    const labels = state.labels.map(label => {
-      return `\t- name: ${label.Name}, categories: ${label.Categories.map(c => c.Name).join('/')}, confidence: ${label.Confidence}`;
-    }).join('\r\n');
-
+    const labels = state.labels.join('\r\n');
 
     const prompt = `Human: I am trying to identify a piece of swag. I ran label detection on an image and got the below results.
      Based on the results, pick the type that makes the most sense. If you can tell it's swag but it's not in the list
-     choose 'other'. If you can't identify any swag use 'unknown'. Be creative, stickers could look like anything. Only pick from this list.: ${swagTypes.join(', ')}.
+     choose 'other'. If you can't identify any swag  or it seems like the image is clearly of a person use 'unknown'. Be creative,
+     stickers could look like anything. Only pick from this list.: ${swagTypes.join(', ')}.
      Label analysis results:
      ${labels}
      Assistant: `;
@@ -34,8 +32,7 @@ exports.handler = async (state) => {
     const completion = answer.completion;
     const type = getTypeFromAnswer(completion);
 
-    const tags = state.labels.filter(l => l.Confidence >= 80).map(l => l.Name);
-    return { type, tags };
+    return { type };
 
   } catch (err) {
     console.error(err);

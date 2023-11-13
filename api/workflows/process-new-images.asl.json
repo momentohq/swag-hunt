@@ -68,6 +68,36 @@
                 "Key.$": "$$.Execution.Input.detail.object.key"
               },
               "Resource": "${S3HeadObject}",
+              "Next": "Save Image Record"
+            },
+            "Save Image Record": {
+              "Type": "Task",
+              "Resource": "${DynamoDBPutItem}",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "Item": {
+                  "pk": {
+                    "S.$": "$.Metadata.referencenumber"
+                  },
+                  "sk": {
+                    "S": "image"
+                  },
+                  "status": {
+                    "S": "Processing"
+                  },
+                  "lock": {
+                    "M": {
+                      "executionId": {
+                        "S.$": "$$.Execution.Id"
+                      },
+                      "startTime": {
+                        "S.$": "$$.Execution.StartTime"
+                      }
+                    }
+                  }
+                }
+              },
+              "ResultPath": null,
               "End": true
             }
           }
@@ -92,7 +122,106 @@
           "Next": "Cleanup and Notify User"
         }
       ],
-      "Default": "Process Photo"
+      "Default": "Detect Swag Labels"
+    },
+    "Detect Swag Labels": {
+      "Type": "Task",
+      "Parameters": {
+        "Image": {
+          "S3Object": {
+            "Bucket": "${SwagBucket}",
+            "Name.$": "$$.Execution.Input.detail.object.key"
+          }
+        }
+      },
+      "Resource": "${DetectLabels}",
+      "Next": "Process Labels",
+      "ResultPath": "$.detected"
+    },
+    "Process Labels": {
+      "Type": "Task",
+      "Resource": "${LambdaInvoke}",
+      "Parameters": {
+        "FunctionName": "${ProcessImageLabelsFunction}",
+        "Payload": {
+          "labels.$": "$.detected.Labels"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Notify and Start Post Processing",
+      "ResultPath": "$.processedLabels"
+    },
+    "Notify and Start Post Processing": {
+      "Type": "Parallel",
+      "Next": "Success",
+      "Branches": [
+        {
+          "StartAt": "Build Success Message",
+          "States": {
+            "Build Success Message": {
+              "Type": "Pass",
+              "Parameters": {
+                "topicName.$": "$.imageData.referencenumber",
+                "message": {
+                  "result": "Succeeded",
+                  "tags.$": "$.processedLabels.Payload.tags"
+                }
+              },
+              "Next": "Send Success Message"
+            },
+            "Send Success Message": {
+              "Type": "Task",
+              "Resource": "${EventBridgePutEvents}",
+              "Parameters": {
+                "Entries": [
+                  {
+                    "Detail": {
+                      "cacheName": "reinvent",
+                      "topicName.$": "$.topicName",
+                      "message.$": "States.Base64Encode(States.JsonToString($.message))"
+                    },
+                    "DetailType": "topicPublish",
+                    "Source": "ProcessSwagStateMachine"
+                  }
+                ]
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Start Post Processing (Async)",
+          "States": {
+            "Start Post Processing (Async)": {
+              "Type": "Task",
+              "Resource": "${StepFunctionsStartExecution}",
+              "Parameters": {
+                "StateMachineArn": "${PostProcessingStateMachine}",
+                "Input": {
+                  "labels.$": "$.processedLabels.Payload.labels",
+                  "referenceNumber.$": "$.imageData.referencenumber",
+                  "originalKey.$": "$$.Execution.Input.detail.object.key",
+                  "lockStartTime.$": "$$.Execution.StartTime",
+                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ]
     },
     "Cleanup and Notify User": {
       "Type": "Parallel",
@@ -147,147 +276,54 @@
           }
         }
       ],
-      "Next": "Fail",
+      "Next": "Update Status to Failed",
       "ResultPath": null
     },
-    "Fail": {
-      "Type": "Fail"
-    },
-    "Process Photo": {
-      "Type": "Parallel",
-      "Branches": [
-        {
-          "StartAt": "Detect Swag Labels",
-          "States": {
-            "Detect Swag Labels": {
-              "Type": "Task",
-              "Parameters": {
-                "Image": {
-                  "S3Object": {
-                    "Bucket": "${SwagBucket}",
-                    "Name.$": "$$.Execution.Input.detail.object.key"
-                  }
-                }
-              },
-              "Resource": "${DetectLabels}",
-              "Next": "Get Swag Type"
-            },
-            "Get Swag Type": {
-              "Type": "Task",
-              "Resource": "${LambdaInvoke}",
-              "OutputPath": "$.Payload",
-              "Parameters": {
-                "FunctionName": "${GetSwagTypeFunction}",
-                "Payload": {
-                  "labels.$": "$.Labels"
-                }
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException",
-                    "Lambda.TooManyRequestsException"
-                  ],
-                  "IntervalSeconds": 1,
-                  "MaxAttempts": 3,
-                  "BackoffRate": 2
-                }
-              ],
-              "End": true
-            }
-          }
-        },
-        {
-          "StartAt": "Move to Public Directory",
-          "States": {
-            "Move to Public Directory": {
-              "Type": "Task",
-              "Parameters": {
-                "Bucket": "${SwagBucket}",
-                "CopySource.$": "States.Format('${SwagBucket}/{}', $$.Execution.Input.detail.object.key)",
-                "Key.$": "States.Format('public/{}', States.ArrayGetItem(States.StringSplit($$.Execution.Input.detail.object.key, '/'), States.MathAdd(States.ArrayLength(States.StringSplit($$.Execution.Input.detail.object.key, '/')), -1)))"
-              },
-              "Resource": "${S3CopyObject}",
-              "ResultPath": null,
-              "Next": "Make Image Public"
-            },
-            "Make Image Public": {
-              "Type": "Task",
-              "Next": "Delete Quarantine Object",
-              "Parameters": {
-                "Bucket": "${SwagBucket}",
-                "Key.$": "States.Format('public/{}', States.ArrayGetItem(States.StringSplit($$.Execution.Input.detail.object.key, '/'), States.MathAdd(States.ArrayLength(States.StringSplit($$.Execution.Input.detail.object.key, '/')), -1)))",
-                "Acl": "public-read"
-              },
-              "Resource": "${S3PutObjectAcl}"
-            },
-            "Delete Quarantine Object": {
-              "Type": "Task",
-              "Parameters": {
-                "Bucket": "${SwagBucket}",
-                "Key.$": "$$.Execution.Input.detail.object.key"
-              },
-              "Resource": "${S3DeleteObject}",
-              "ResultPath": null,
-              "End": true
-            }
-          }
-        }
-      ],
-      "Next": "Save Image Record",
-      "ResultPath": "$.processedResults"
-    },
-    "Save Image Record": {
+    "Update Status to Failed": {
       "Type": "Task",
-      "Resource": "${DynamoDBPutItem}",
+      "Resource": "${DynamoDBUpdateItem}",
       "Parameters": {
         "TableName": "${SwagTable}",
-        "Item": {
+        "Key": {
           "pk": {
             "S.$": "$.imageData.referencenumber"
           },
           "sk": {
             "S": "image"
+          }
+        },
+        "UpdateExpression": "SET #status = :failed",
+        "ConditionExpression": "#lock.#startTime <= :startTime",
+        "ExpressionAttributeNames": {
+          "#status": "status",
+          "#lock": "lock",
+          "#startTime": "startTime"
+        },
+        "ExpressionAttributeValues": {
+          ":failed": {
+            "S": "Failed"
           },
-          "url": {
-            "S.$": "States.Format('https://${SwagBucket}.s3.amazonaws.com/public/{}', States.ArrayGetItem(States.StringSplit($$.Execution.Input.detail.object.key, '/'), States.MathAdd(States.ArrayLength(States.StringSplit($$.Execution.Input.detail.object.key, '/')), -1)))"
+          ":executionId": {
+            "S.$": "$$.Execution.StartTime"
           }
         }
       },
-      "Next": "Build Success Message",
-      "ResultPath": null
-    },
-    "Build Success Message": {
-      "Type": "Pass",
-      "Parameters": {
-        "topicName.$": "$.imageData.referencenumber",
-        "message": {
-          "result": "Succeeded",
-          "type.$": "$.processedResults[0].type",
-          "tags.$": "$.processedResults[0].tags"
+      "Next": "Fail",
+      "ResultPath": null,
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "DynamoDB.ConditionalCheckFailedException"
+          ],
+          "Next": "Newer Execution is Running"
         }
-      },
-      "Next": "Send Success Message"
+      ]
     },
-    "Send Success Message": {
-      "Type": "Task",
-      "Resource": "${EventBridgePutEvents}",
-      "Parameters": {
-        "Entries": [
-          {
-            "Detail": {
-              "cacheName": "reinvent",
-              "topicName.$": "$.topicName",
-              "message.$": "States.Base64Encode(States.JsonToString($.message))"
-            },
-            "DetailType": "topicPublish",
-            "Source": "ProcessSwagStateMachine"
-          }
-        ]
-      },
-      "Next": "Success"
+    "Newer Execution is Running": {
+      "Type": "Succeed"
+    },
+    "Fail": {
+      "Type": "Fail"
     },
     "Success": {
       "Type": "Succeed"
@@ -351,10 +387,7 @@
           }
         ]
       },
-      "Next": "Failed to Process Image"
-    },
-    "Failed to Process Image": {
-      "Type": "Fail"
+      "Next": "Update Status to Failed"
     }
   }
 }

@@ -34,24 +34,19 @@ paths:
             schema:
               $ref: '#/components/schemas/NewSwag'
       responses:
-        201:
-          description: The new swag was added
+        202:
+          description: New swag was submitted
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  from:
-                    type: string
-                  type:
+                  id:
                     type: string
                 required:
-                  - from
-                  - type
+                  - id
         400:
           $ref: '#/components/responses/BadRequest'
-        409:
-          $ref: '#/components/responses/Conflict'
         500:
           $ref: '#/components/responses/UnknownError'
       x-amazon-apigateway-request-validator: Validate All
@@ -271,16 +266,12 @@ components:
       type: object
       required:
         - from
-        - type
         - referenceNumber
       properties:
         from:
           type: string
         location:
           type: string
-        type:
-          type: string
-          enum: [shirt, hoodie, socks, sticker, hat, pin, toy, pen, cup, stuffed animal, coozie, power bank, sunglasses, notebook, tote, phone accessory, other]
         tags:
           type: array
           items:

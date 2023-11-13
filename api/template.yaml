@@ -14,6 +14,8 @@ Parameters:
   CORSOrigin:
     Type: String
     Default: '*'
+  HostedZoneId:
+    Type: String
 
 Globals:
   Function:
@@ -80,6 +82,7 @@ Resources:
               - http://localhost:3000
             AllowedMethods:
               - PUT
+              - GET
             AllowedHeaders:
               - '*'
       PublicAccessBlockConfiguration:
@@ -87,6 +90,57 @@ Resources:
         IgnorePublicAcls: false
         BlockPublicPolicy: false
         RestrictPublicBuckets: false
+
+  SwagCloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultCacheBehavior:
+          TargetOriginId: SwagBucketOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          Compress: true
+          DefaultTTL: 86400
+        Origins:
+          - Id: SwagBucketOrigin
+            DomainName: !GetAtt SwagBucket.DomainName
+            S3OriginConfig: {}
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AssetCertificate
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Aliases:
+          - assets.swaghunt.io
+
+  AssetCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: assets.swaghunt.io
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: assets.swaghunt.io
+          HostedZoneId: !Ref HostedZoneId
+
+  Route53RecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: assets.swaghunt.io
+      Type: A
+      AliasTarget:
+        HostedZoneId: Z2FDTNDATAQYW2
+        DNSName: !GetAtt SwagCloudFrontDistribution.DomainName
 
   SwagApi:
     Type: AWS::Serverless::Api
@@ -114,16 +168,11 @@ Resources:
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
-              Action:
-                - dynamodb:GetItem
-                - dynamodb:PutItem
-              Resource: !GetAtt SwagTable.Arn
-            - Effect: Allow
-              Action: events:PutEvents
-              Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+              Action: states:StartExecution
+              Resource: !Ref AddSwagStateMachine
       Environment:
         Variables:
-          TABLE_NAME: !Ref SwagTable
+          ADD_SWAG_STATE_MACHINE: !Ref AddSwagStateMachine
       Events:
         FromApi:
           Type: Api
@@ -307,6 +356,48 @@ Resources:
         Variables:
           BUCKET_NAME: !Ref SwagBucket
 
+  ConvertToWebpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/convert-to-webp
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: s3:GetObject
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/quarantine/*
+            - Effect: Allow
+              Action: s3:PutObject
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/public/*
+      Layers:
+        - !Ref SharpLayer
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref SwagBucket
+
+  ProcessImageLabelsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/process-image-labels
+      Policies:
+        - AWSLambdaBasicExecutionRole
+
+  SaveSwagRecordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/save-swag-record
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: dynamodb:PutItem
+              Resource: !GetAtt SwagTable.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref SwagTable
+
   SharpLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -326,15 +417,16 @@ Resources:
         DetectLabels: !Sub arn:${AWS::Partition}:states:::aws-sdk:rekognition:detectLabels
         S3DeleteObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:deleteObject
         S3HeadObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:headObject
-        S3CopyObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:copyObject
-        S3PutObjectAcl: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:putObjectAcl
         DynamoDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
+        DynamoDBUpdateItem: !Sub arn:${AWS::Partition}:states:::dynamodb:updateItem
         LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
         EventBridgePutEvents: !Sub arn:${AWS::Partition}:states:::events:putEvents
+        StepFunctionsStartExecution: !Sub arn:${AWS::Partition}:states:::states:startExecution
+        PostProcessingStateMachine: !Ref PostProcessSwagStateMachine
         SwagBucket: !Ref SwagBucket
         SwagTable: !Ref SwagTable
-        GetSwagTypeFunction: !GetAtt GetSwagTypeFunction.Arn
         DownscalePhotoFunction: !GetAtt DownscalePhotoFunction.Arn
+        ProcessImageLabelsFunction: !GetAtt ProcessImageLabelsFunction.Arn
       Policies:
         - Version: 2012-10-17
           Statement:
@@ -347,25 +439,23 @@ Resources:
               Action:
                 - s3:GetObject
                 - s3:DeleteObject
-                - s3:HeadObject
-              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/*
-            - Effect: Allow
-              Action:
-                - s3:PutObject
-                - s3:PutObjectAcl
-                - s3:PutObjectStorageClass
-              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/public/*
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/quarantine/*
             - Effect: Allow
               Action: lambda:InvokeFunction
               Resource:
-                - !GetAtt GetSwagTypeFunction.Arn
                 - !GetAtt DownscalePhotoFunction.Arn
+                - !GetAtt ProcessImageLabelsFunction.Arn
             - Effect: Allow
               Action: events:PutEvents
               Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
             - Effect: Allow
-              Action: dynamodb:PutItem
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
               Resource: !GetAtt SwagTable.Arn
+            - Effect: Allow
+              Action: states:StartExecution
+              Resource: !Ref PostProcessSwagStateMachine
       Events:
         S3ItemUploaded:
           Type: EventBridgeRule
@@ -382,6 +472,69 @@ Resources:
                 object:
                   key:
                     - prefix: quarantine/
+
+  PostProcessSwagStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: workflows/post-process-images.asl.json
+      DefinitionSubstitutions:
+        LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
+        DynamoDBUpdateItem: !Sub arn:${AWS::Partition}:states:::dynamodb:updateItem
+        S3DeleteObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:deleteObject
+        S3PutObjectAcl: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:putObjectAcl
+        EventBridgePutEvents: !Sub arn:${AWS::Partition}:states:::events:putEvents
+        SwagTable: !Ref SwagTable
+        SwagBucket: !Ref SwagBucket
+        GetSwagTypeFunction: !GetAtt GetSwagTypeFunction.Arn
+        ConvertToWebpFunction: !GetAtt ConvertToWebpFunction.Arn
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource:
+                - !GetAtt GetSwagTypeFunction.Arn
+                - !GetAtt ConvertToWebpFunction.Arn
+            - Effect: Allow
+              Action: s3:PutObjectAcl
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/public/*
+            - Effect: Allow
+              Action: dynamodb:UpdateItem
+              Resource: !GetAtt SwagTable.Arn
+            - Effect: Allow
+              Action: s3:DeleteObject
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/quarantine/*
+            - Effect: Allow
+              Action: events:PutEvents
+              Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+
+  AddSwagStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: workflows/add-swag.asl.json
+      DefinitionSubstitutions:
+        DynamoDBGetItem: !Sub arn:${AWS::Partition}:states:::dynamodb:getItem
+        DynamoDBDeleteItem: !Sub arn:${AWS::Partition}:states:::dynamodb:deleteItem
+        DynamoDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
+        EventBridgePutEvents: !Sub arn:${AWS::Partition}:states:::events:putEvents
+        LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
+        SwagTable: !Ref SwagTable
+        SaveSwagRecordFunction: !GetAtt SaveSwagRecordFunction.Arn
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:DeleteItem
+                - dynamodb:PutItem
+              Resource: !GetAtt SwagTable.Arn
+            - Effect: Allow
+              Action: events:PutEvents
+              Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
+            - Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource: !GetAtt SaveSwagRecordFunction.Arn
 
   GetSwagTypeFunction:
     Type: AWS::Serverless::Function
