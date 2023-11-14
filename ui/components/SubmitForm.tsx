@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion'
-import { useRouter } from 'next/router'
-import { Dialog } from '@headlessui/react'
+import { motion } from 'framer-motion';
+import { Dialog } from '@headlessui/react';
 import { saveSwag, uploadPhoto } from '../services/SwagService';
 import { TopicClient, CredentialProvider, Configurations, TopicSubscribe, TopicItem } from '@gomomento/sdk-web';
 import { TailSpin } from 'react-loading-icons';
@@ -28,8 +27,7 @@ interface Message {
 }
 
 export default function SubmitForm({ onClose }: { onClose?: () => void }) {
-  const router = useRouter()
-  let overlayRef = useRef()
+  let overlayRef = useRef();
   const [formData, setFormData] = useState<FormData>({
     image: null,
     from: '',
@@ -68,7 +66,7 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     };
 
     const response: NewSwagResponse = await saveSwag(newSwag);
-    if(response.message){
+    if (response.message) {
       setSubmitError(response.message);
     } else {
       onClose();
@@ -81,6 +79,11 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
       updateFormData({ ...formData, image: file });
       startImageProcessing(file);
     }
+  };
+
+  const handleFileInputClick = (event: React.MouseEvent<HTMLInputElement>) => {
+    event.stopPropagation();
+    console.log('clicked');
   };
 
   const startImageProcessing = async (file: File) => {
@@ -140,10 +143,6 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     updateFormData({ ...formData, [event.target.name]: event.target.value });
   };
 
-  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    updateFormData({ ...formData, [event.target.name]: event.target.value });
-  };
-
   const updateFormData = (newFormData: FormData) => {
     formDataRef.current = newFormData;
     setFormData(newFormData);
@@ -159,10 +158,10 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     }
   };
 
-  function handleClose() {
-    router.push('/', undefined, { shallow: true })
+  function handleClose(event) {
+    console.log(event);
     onClose()
-  }
+  };
 
   return (
     <Dialog
@@ -172,6 +171,8 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
       initialFocus={overlayRef}
       className="fixed inset-0 z-10 flex items-center justify-center"
     >
+      <Dialog.Title />
+      <Dialog.Description />
       <Dialog.Overlay
         ref={overlayRef}
         as={motion.div}
@@ -185,7 +186,7 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
         <hr />
         <label className="block">
           <span className="block text-left">Swag Photo</span>
-          <input type="file" ref={fileInputRef} accept=".png, .jpg, .jpeg" onChange={handleImageChange} className="block w-full mt-1" />
+          <input type="file" ref={fileInputRef} accept=".png, .jpg, .jpeg" onClick={handleFileInputClick} onChange={handleImageChange} className="block w-full mt-1" />
           {imageError && <p className="text-red-500 text-sm mt-2">{imageError}</p>}
         </label>
 
