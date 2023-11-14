@@ -5,9 +5,9 @@ const bedrock = new BedrockRuntimeClient();
 const secrets = new SecretsManagerClient();
 let mviClient;
 
-exports.handler = async (event) => {
+exports.handler = async (state) => {
   try {
-    const { swag } = event.detail;
+    const { swag } = state;
 
     const response = await bedrock.send(new InvokeModelCommand({
       modelId: 'amazon.titan-embed-text-v1',
@@ -33,11 +33,13 @@ exports.handler = async (event) => {
     ]);
     if (result instanceof VectorUpsertItemBatch.Error) {
       console.error(result.errorCode(), result.message());
+      throw Error('Could not index provided item');
     } else if (result instanceof VectorUpsertItemBatch.Success) {
       console.log('Successfully indexed');
     }
   } catch (err) {
     console.error(err);
+    throw err;
   }
 };
 
@@ -71,4 +73,4 @@ const setupMviClient = async () => {
     configuration: VectorIndexConfigurations.Laptop.v1(),
     credentialProvider: CredentialProvider.fromString({ apiKey: secret.momento })
   });
-}
+};

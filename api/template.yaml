@@ -80,6 +80,7 @@ Resources:
               - https://swaghunt.io
               - https://www.swaghunt.io
               - http://localhost:3000
+              - https://assets.swaghunt.io
             AllowedMethods:
               - PUT
               - GET
@@ -245,15 +246,6 @@ Resources:
       Environment:
         Variables:
           SECRET_ID: !Ref MomentoSecret
-      Events:
-        EmbeddingEvent:
-          Type: EventBridgeRule
-          Properties:
-            Pattern:
-              source:
-                - swag hunt
-              detail-type:
-                - Create Embedding
 
   SearchFunction:
     Type: AWS::Serverless::Function
@@ -519,7 +511,8 @@ Resources:
         EventBridgePutEvents: !Sub arn:${AWS::Partition}:states:::events:putEvents
         LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
         SwagTable: !Ref SwagTable
-        SaveSwagRecordFunction: !GetAtt SaveSwagRecordFunction.Arn
+        SaveSwagFunction: !GetAtt SaveSwagRecordFunction.Arn
+        AddToMVIFunction: !GetAtt CreateSwagEmbeddingFunction.Arn
       Policies:
         - Version: 2012-10-17
           Statement:
@@ -534,7 +527,9 @@ Resources:
               Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default
             - Effect: Allow
               Action: lambda:InvokeFunction
-              Resource: !GetAtt SaveSwagRecordFunction.Arn
+              Resource:
+                - !GetAtt SaveSwagRecordFunction.Arn
+                - !GetAtt CreateSwagEmbeddingFunction.Arn
 
   GetSwagTypeFunction:
     Type: AWS::Serverless::Function

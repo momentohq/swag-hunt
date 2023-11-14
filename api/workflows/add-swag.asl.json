@@ -45,7 +45,7 @@
               "StringEquals": "Success"
             }
           ],
-          "Next": "Is New Swag?"
+          "Next": "Get Existing Swag"
         }
       ],
       "Default": "Delete Swag Record"
@@ -115,20 +115,31 @@
       "Seconds": 5,
       "Next": "Get Image Processing Record"
     },
+    "Get Existing Swag": {
+      "Type": "Task",
+      "Resource": "${DynamoDBGetItem}",
+      "Parameters": {
+        "TableName": "${SwagTable}",
+        "Key": {
+          "pk": {
+            "S.$": "States.Format('{}#{}', $$.Execution.Input.from, $.Item.type.S)"
+          },
+          "sk": {
+            "S": "swag"
+          }
+        }
+      },
+      "Next": "Is New Swag?",
+      "ResultPath": "$.existingItem"
+    },
     "Is New Swag?": {
       "Type": "Choice",
       "Choices": [
         {
-          "And": [
-            {
-              "Variable": "$$.Execution.Input.isNewSwag",
-              "IsPresent": true
-            },
-            {
-              "Variable": "$$.Execution.Input.isNewSwag",
-              "BooleanEquals": true
-            }
-          ],
+          "Not": {
+            "Variable": "$.exitingItem.Item.pk",
+            "IsPresent": true
+          },
           "Next": "Save Swag"
         }
       ],
@@ -141,10 +152,10 @@
         "TableName": "${SwagTable}",
         "Item": {
           "pk": {
-            "S.$": "$$.Execution.Input.swagKey"
+            "S.$": "States.Format('{}#{}', $$.Execution.Input.from, $.Item.type.S)"
           },
           "sk": {
-            "S.$": "$$.Execution.Input.swagSk"
+            "S.$": "States.Format('additionalImage#{}', $$.Execution.Input.referenceNumber)"
           },
           "url": {
             "S.$": "$.Item.url.S"
@@ -177,25 +188,44 @@
           "BackoffRate": 2
         }
       ],
-      "Next": "Send Create Embedding Event",
-      "ResultPath": null
+      "Next": "Add to Momento Vector Index",
+      "OutputPath": "$.Payload"
     },
-    "Send Create Embedding Event": {
+    "Add to Momento Vector Index": {
       "Type": "Task",
-      "Resource": "${EventBridgePutEvents}",
+      "Resource": "${LambdaInvoke}",
+      "OutputPath": "$.Payload",
       "Parameters": {
-        "Entries": [
-          {
-            "Detail": {
-              "key.$": "$$.Execution.Input.swagKey"
-            },
-            "DetailType": "Create Embedding",
-            "Source": "swag hunt"
-          }
-        ]
+        "Payload.$": "$",
+        "FunctionName": "${AddToMVIFunction}"
       },
-      "ResultPath": null,
-      "Next": "Success"
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Success",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "Failed to Index",
+          "ResultPath": null
+        }
+      ]
+    },
+    "Failed to Index": {
+      "Type": "Fail",
+      "Error": "FailedToIndex"
     },
     "Success": {
       "Type": "Succeed"
