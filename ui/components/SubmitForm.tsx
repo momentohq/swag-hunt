@@ -81,11 +81,6 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     }
   };
 
-  const handleFileInputClick = (event: React.MouseEvent<HTMLInputElement>) => {
-    event.stopPropagation();
-    console.log('clicked');
-  };
-
   const startImageProcessing = async (file: File) => {
     setIsProcessing(true);
     setImageError('');
@@ -158,8 +153,7 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     }
   };
 
-  function handleClose(event) {
-    console.log(event);
+  function handleClose() {
     onClose()
   };
 
@@ -186,7 +180,7 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
         <hr />
         <label className="block">
           <span className="block text-left">Swag Photo</span>
-          <input type="file" ref={fileInputRef} accept=".png, .jpg, .jpeg" onClick={handleFileInputClick} onChange={handleImageChange} className="block w-full mt-1" />
+          <input type="file" ref={fileInputRef} accept=".png, .jpg, .jpeg" onChange={handleImageChange} className="block w-full mt-1" />
           {imageError && <p className="text-red-500 text-sm mt-2">{imageError}</p>}
         </label>
 
