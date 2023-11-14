@@ -7,6 +7,12 @@ exports.handler = async (state) => {
   try {
     const image = await loadImageBuffer(state.key);
     const webpBuffer = await sharp(image)
+      .resize({
+        width: 1920,
+        height: 1280,
+        fit: 'inside',
+        withoutEnlargement: true
+      })
       .webp({
         quality: 80,
         reductionEffort: 4

@@ -67,12 +67,13 @@ export default function SharedModal({
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className="absolute"
+                className="absolute w-full h-full"
               >
                 <Image
                   src={currentPhoto}
-                  width={navigation ? 1280 : 1920}
-                  height={navigation ? 853 : 1280}
+                  layout="fill"
+                  objectFit="contain"
+                  objectPosition="center"
                   priority
                   alt="Conference Swag"
                   onLoad={() => setLoaded(true)}
@@ -120,7 +121,7 @@ export default function SharedModal({
                   <ArrowTopRightOnSquareIcon className="h-5 w-5" />
                 </a>
                 <a
-                  href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20I%20found%20at%20re:Invent!%0A%0Ahttps://swaghunt.io/${from}/${type}/`}
+                  href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20I%20found%20at%20re:Invent!%0A%23reinvent%20%23swag%0A%0Ahttps://swaghunt.io/${from}/${type}`}
                   className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
                   target="_blank"
                   title="Open fullsize version"
