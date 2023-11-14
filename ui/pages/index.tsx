@@ -5,16 +5,17 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import Bridge from '../components/Icons/Bridge'
-import Logo from '../components/Icons/Logo'
 import SubmitForm from '../components/SubmitForm'
 import type { SwagSummary } from '../utils/types'
 import { useLastViewedPhoto } from '../utils/useLastViewedPhoto'
 import { getSwagList, swagSearch } from '../services/SwagService'
 import { toTitleCase } from '../utils/titleCase'
 
-const Home: NextPage = ({ swag, pageToken }: { swag: SwagSummary[], pageToken?: string }) => {
-  const router = useRouter()
-  const { photoId } = router.query
+const Home: NextPage = () => {
+  const router = useRouter();
+
+  const { photoId } = router.query;
+  const [swag, setSwag] = useState<SwagSummary[]>([]);
   const [lastViewedPhoto, setLastViewedPhoto] = useLastViewedPhoto();
   const [showAddSwag, setShowAddSwag] = useState<Boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>();
@@ -22,7 +23,19 @@ const Home: NextPage = ({ swag, pageToken }: { swag: SwagSummary[], pageToken?: 
   const lastViewedPhotoRef = useRef<HTMLAnchorElement>(null)
 
   useEffect(() => {
-    // This effect keeps track of the last viewed photo in the modal to keep the index page in sync when the user navigates back
+    const fetchSwagList = async () => {
+      try {
+        const swagList = await getSwagList({});
+        setSwag(swagList.swag);
+      } catch (error) {
+        console.error('Failed to fetch swag list:', error);
+      }
+    };
+
+    fetchSwagList();
+  }, []);
+
+  useEffect(() => {
     if (lastViewedPhoto && !photoId) {
       lastViewedPhotoRef.current.scrollIntoView({ block: 'center' })
       setLastViewedPhoto(null)
@@ -33,7 +46,7 @@ const Home: NextPage = ({ swag, pageToken }: { swag: SwagSummary[], pageToken?: 
     if (event.key === 'Enter') {
       setSearchQuery('');
       const results = await swagSearch(searchQuery);
-      swag = results.swag;
+      setSwag(results.swag);
     }
   }
 

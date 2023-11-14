@@ -31,6 +31,12 @@ exports.handler = async (state) => {
         }
       }
     ]);
+
+    console.log({
+      from: swag.from,
+      type: swag.swagType,
+      url: swag.url
+    });
     if (result instanceof VectorUpsertItemBatch.Error) {
       console.error(result.errorCode(), result.message());
       throw Error('Could not index provided item');

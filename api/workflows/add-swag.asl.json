@@ -143,26 +143,64 @@
           "Next": "Save Swag"
         }
       ],
-      "Default": "Create Additional Item Record"
+      "Default": "Update Database Records"
     },
-    "Create Additional Item Record": {
-      "Type": "Task",
-      "Resource": "${DynamoDBPutItem}",
-      "Parameters": {
-        "TableName": "${SwagTable}",
-        "Item": {
-          "pk": {
-            "S.$": "States.Format('{}#{}', $$.Execution.Input.from, $.Item.type.S)"
-          },
-          "sk": {
-            "S.$": "States.Format('additionalImage#{}', $$.Execution.Input.referenceNumber)"
-          },
-          "url": {
-            "S.$": "$.Item.url.S"
+    "Update Database Records": {
+      "Type": "Parallel",
+      "Next": "Success",
+      "Branches": [
+        {
+          "StartAt": "Create Additional Item Record",
+          "States": {
+            "Create Additional Item Record": {
+              "Type": "Task",
+              "Resource": "${DynamoDBPutItem}",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "Item": {
+                  "pk": {
+                    "S.$": "States.Format('{}#{}', $$.Execution.Input.from, $.Item.type.S)"
+                  },
+                  "sk": {
+                    "S.$": "States.Format('additionalImage#{}', $$.Execution.Input.referenceNumber)"
+                  },
+                  "url": {
+                    "S.$": "$.Item.url.S"
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Update Main Swag Record ETag",
+          "States": {
+            "Update Main Swag Record ETag": {
+              "Type": "Task",
+              "Resource": "${DynamoDBUpdateItem}",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "Key": {
+                  "pk": {
+                    "S.$": "States.Format('{}#{}', $$.Execution.Input.from, $.Item.type.S)"
+                  },
+                  "sk": {
+                    "S": "swag"
+                  }
+                },
+                "UpdateExpression": "SET etag = :etag",
+                "ExpressionAttributeValues": {
+                  ":etag": {
+                    "S.$": "$$.State.EnteredTime"
+                  }
+                }
+              },
+              "End": true
+            }
           }
         }
-      },
-      "Next": "Success"
+      ]
     },
     "Save Swag": {
       "Type": "Task",

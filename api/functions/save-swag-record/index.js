@@ -12,6 +12,7 @@ exports.handler = async (state) => {
     from: state.input.from,
     swagType: state.type,
     url: state.url,
+    etag: new Date().toISOString(),
     ...state.input.location && { location: state.input.location },
     ...state.input.tags && { tags: state.input.tags },
     ...state.input.createdBy && { createdBy: state.input.createdBy }

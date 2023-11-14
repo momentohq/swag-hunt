@@ -205,7 +205,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/Swag'
+                $ref: '#/components/schemas/Swag'
+        304:
+          $ref: '#/components/responses/NotModified'
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/UnknownError'
       x-amazon-apigateway-request-validator: Validate All
       x-amazon-apigateway-integration:
         uri:
@@ -336,6 +342,8 @@ components:
               message:
                 type: string
                 description: The resquested resource was not found
+    NotModified:
+      description: The version on the server matches the version on the client
     Conflict:
       description: Could not process due to resource state
       content:

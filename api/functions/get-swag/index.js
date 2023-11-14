@@ -35,7 +35,10 @@ exports.handler = async (event) => {
         swag,
         ...results.LastEvaluatedKey && { pageToken: results.LastEvaluatedKey }
       }),
-      headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
+      headers: {
+        'Access-Control-Allow-Origin': process.env.CORS_ORIGIN,
+        'Cache-Control': 'max-age=30 public must-revalidate'
+       }
     };
   }
   catch (err) {

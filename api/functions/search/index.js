@@ -31,6 +31,7 @@ exports.handler = async (event) => {
       throw new Error(result.message());
     } else if (result instanceof VectorSearch.Success) {
       const results = result.hits().map(hit => {
+        console.log(hit);
         if (hit.distance > .5) {
           return hit.metadata;
         }

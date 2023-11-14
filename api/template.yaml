@@ -508,6 +508,7 @@ Resources:
         DynamoDBGetItem: !Sub arn:${AWS::Partition}:states:::dynamodb:getItem
         DynamoDBDeleteItem: !Sub arn:${AWS::Partition}:states:::dynamodb:deleteItem
         DynamoDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
+        DynamoDBUpdateItem: !Sub arn:${AWS::Partition}:states:::dynamodb:updateItem
         EventBridgePutEvents: !Sub arn:${AWS::Partition}:states:::events:putEvents
         LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
         SwagTable: !Ref SwagTable
@@ -521,6 +522,7 @@ Resources:
                 - dynamodb:GetItem
                 - dynamodb:DeleteItem
                 - dynamodb:PutItem
+                - dynamodb:UpdateItem
               Resource: !GetAtt SwagTable.Arn
             - Effect: Allow
               Action: events:PutEvents

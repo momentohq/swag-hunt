@@ -39,6 +39,7 @@ exports.handler = async (event) => {
         headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
       };
     }
+    let etag;
     let swagResponse = { additionalImages: [] };
     for (const item of response.Items) {
       const data = unmarshall(item);
@@ -50,6 +51,19 @@ exports.handler = async (event) => {
           url: data.url,
           upvotes: data.sort,
           ...data.location && { location: data.location }
+        }
+        if (data.etag) {
+          etag = data.etag;
+          if (event.headers?.ETag === etag && (!event.headers?.['Cache-Control'] || event.headers['Cache-Control'] !== 'no-cache')) {
+            return {
+              statusCode: 304,
+              headers: {
+                'Access-Control-Allow-Origin': process.env.CORS_ORIGIN,
+                'Cache-Control': 'max-age=60 public must-revalidate',
+                'ETag': etag
+              }
+            };
+          }
         }
       } else {
         swagResponse.additionalImages.push(data.url);
@@ -64,7 +78,13 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       body: JSON.stringify(swagResponse),
-      headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
+      headers: {
+        'Access-Control-Allow-Origin': process.env.CORS_ORIGIN,
+        'Cache-Control': 'max-age=60 public must-revalidate',
+        ...etag && {
+          'ETag': etag
+        }
+      }
     };
 
   } catch (err) {
