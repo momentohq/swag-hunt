@@ -3,17 +3,22 @@ import { NewSwag, NewSwagResponse, SwagDetail, SwagList, UploadDetails } from ".
 const SwagAPI: string = process.env.NEXT_PUBLIC_BASE_URL;
 
 interface UploadPhotoParams {
-  photo: File;
-  referenceNumber?: string;
+  photo: File
+  referenceNumber?: string
+  adminOverride?: string
 }
 
-export const uploadPhoto = async ({ photo, referenceNumber }: UploadPhotoParams): Promise<string> => {
+export const uploadPhoto = async ({ photo, referenceNumber, adminOverride }: UploadPhotoParams): Promise<string> => {
   try {
     const fileName = encodeURIComponent(photo.name);
 
     const queryParams = new URLSearchParams({ fileName });
     if (referenceNumber) {
       queryParams.append('referenceNumber', referenceNumber);
+    }
+
+    if(adminOverride){
+      queryParams.append('adminOverride', adminOverride);
     }
 
     const response: Response = await fetch(`${SwagAPI}/swag/uploads?${queryParams.toString()}`, { method: 'GET' });

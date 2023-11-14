@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
 import { Dialog } from '@headlessui/react';
 import { saveSwag, uploadPhoto } from '../services/SwagService';
@@ -26,7 +26,7 @@ interface Message {
   message?: string
 }
 
-export default function SubmitForm({ onClose }: { onClose?: () => void }) {
+export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string, onClose?: () => void }) {
   let overlayRef = useRef();
   const [formData, setFormData] = useState<FormData>({
     image: null,
@@ -35,12 +35,14 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     tags: [],
     email: ''
   });
+
   const [refNumber, setRefNumber] = useState<string>();
   const [subscription, setSubscription] = useState<TopicSubscribe.Subscription>();
   const [isProcessing, setIsProcessing] = useState<Boolean>(false);
   const [imageError, setImageError] = useState<string>();
   const [canSubmit, setCanSubmit] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>();
+  const [adminOverride, setAdminOverride] = useState<string>(showAdmin);
   const tagInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formDataRef = useRef(formData);
@@ -85,7 +87,7 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
     setIsProcessing(true);
     setImageError('');
     try {
-      const photoReferenceNumber: string = await uploadPhoto({ photo: file, referenceNumber: refNumber });
+      const photoReferenceNumber: string = await uploadPhoto({ photo: file, referenceNumber: refNumber, adminOverride });
       if (photoReferenceNumber != refNumber) {
         setRefNumber(photoReferenceNumber);
         const response: Response = await fetch(`/api/tokens?referenceNumber=${photoReferenceNumber}`);
@@ -178,6 +180,14 @@ export default function SubmitForm({ onClose }: { onClose?: () => void }) {
       <form onSubmit={handleSubmit} className="mb-5 flex h-fit flex-col justify-end gap-4 overflow-hidden rounded-lg bg-white/10 px-6 pb-8 text-center text-white shadow-highlight lg:pt-0 z-50">
         <h1 className="text-center text-3xl font-bold mt-4">Found some swag?</h1>
         <hr />
+        {showAdmin && (<input
+          placeholder="Those who know, know..."
+          type="password"
+          value={adminOverride}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setAdminOverride(e.target.value)}
+          className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
+        />
+        )}
         <label className="block">
           <span className="block text-left">Swag Photo</span>
           <input type="file" ref={fileInputRef} accept=".png, .jpg, .jpeg" onChange={handleImageChange} className="block w-full mt-1" />

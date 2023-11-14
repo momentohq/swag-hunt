@@ -214,6 +214,7 @@
                   "referenceNumber.$": "$.imageData.referencenumber",
                   "originalKey.$": "$$.Execution.Input.detail.object.key",
                   "lockStartTime.$": "$$.Execution.StartTime",
+                  "uploadMetadata.$": "$.imageData",
                   "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
                 }
               },

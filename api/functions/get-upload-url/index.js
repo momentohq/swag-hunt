@@ -7,10 +7,11 @@ const short = require('short-uuid');
 const secrets = new SecretsManagerClient();
 const s3 = new S3Client();
 let cacheClient;
+let cachedSecrets;
 
 exports.handler = async (event) => {
   try {
-    let { fileName, referenceNumber } = event.queryStringParameters ?? {};
+    let { fileName, referenceNumber, adminOverride } = event.queryStringParameters ?? {};
     await setupCacheClient();
     if (!referenceNumber) {
       referenceNumber = short.generate();
@@ -38,6 +39,7 @@ exports.handler = async (event) => {
       ContentType: contentType,
       Metadata: {
         referencenumber: referenceNumber,
+        ...(adminOverride && adminOverride === cachedSecrets.admin) && { adminoverride: "momento" }
       },
     });
 
@@ -83,11 +85,14 @@ const setupCacheClient = async () => {
     return;
   }
 
-  const secretResponse = await secrets.send(new GetSecretValueCommand({ SecretId: process.env.SECRET_ID }));
-  const secret = JSON.parse(secretResponse.SecretString);
+  if (!cachedSecrets) {
+    const secretResponse = await secrets.send(new GetSecretValueCommand({ SecretId: process.env.SECRET_ID }));
+    cachedSecrets = JSON.parse(secretResponse.SecretString);
+  }
+
   cacheClient = await CacheClient.create({
     configuration: Configurations.Lambda.latest(),
-    credentialProvider: CredentialProvider.fromString({ apiKey: secret.momento }),
+    credentialProvider: CredentialProvider.fromString({ apiKey: cachedSecrets.momento }),
     defaultTtlSeconds: 300
   });
 };

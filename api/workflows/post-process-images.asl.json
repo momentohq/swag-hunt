@@ -32,10 +32,29 @@
         {
           "Variable": "$.getSwagType.Payload.type",
           "StringEquals": "unknown",
-          "Next": "Set Image Status to Invalid"
+          "Next": "Admin Override?"
         }
       ],
       "Default": "Convert Image and Save"
+    },
+    "Admin Override?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$$.Execution.Input.uploadMetadata.adminoverride",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$$.Execution.Input.uploadMetadata.adminoverride",
+              "StringEquals": "momento"
+            }
+          ],
+          "Next": "Convert Image and Save"
+        }
+      ],
+      "Default": "Set Image Status to Invalid"
     },
     "Set Image Status to Invalid": {
       "Type": "Task",
@@ -45,6 +64,9 @@
         "Key": {
           "pk": {
             "S.$": "$$.Execution.Input.referenceNumber"
+          },
+          "sk": {
+            "S": "image"
           }
         },
         "UpdateExpression": "SET #status = :invalid REMOVE #url",

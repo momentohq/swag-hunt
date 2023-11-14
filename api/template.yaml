@@ -16,6 +16,8 @@ Parameters:
     Default: '*'
   HostedZoneId:
     Type: String
+  AdminOverrideKey:
+    Type: String
 
 Globals:
   Function:
@@ -159,6 +161,39 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: ./openapi.yaml
+
+  APICertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: api.swaghunt.io
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: api.swaghunt.io
+          HostedZoneId: !Ref HostedZoneId
+
+  SwagApiGatewayDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: api.swaghunt.io
+      CertificateArn: !Ref APICertificate
+
+  SwagApiBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref SwagApiGatewayDomainName
+      RestApiId: !Ref SwagApi
+      Stage: v1
+
+  Route53RecordSet:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: api.swaghunt.io
+      Type: CNAME
+      TTL: 3600
+      ResourceRecords:
+        - !GetAtt SwagApiGatewayDomainName.DistributionDomainName
+
 
   AddSwagFunction:
     Type: AWS::Serverless::Function
@@ -551,6 +586,8 @@ Resources:
         Fn::Sub:
           - |-
             {
-              "momento": "${MomentoApiKey}"
+              "momento": "${MomentoApiKey}",
+              "admin": "${AdminKey}"
             }
           - MomentoApiKey: !Ref MomentoApiKey
+            AdminKey: !Ref AdminOverrideKey
