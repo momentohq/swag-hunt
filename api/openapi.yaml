@@ -278,6 +278,8 @@ components:
           type: string
         location:
           type: string
+        type:
+          type: string
         tags:
           type: array
           items:

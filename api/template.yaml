@@ -397,11 +397,17 @@ Resources:
             - Effect: Allow
               Action: s3:PutObject
               Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/public/*
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref MomentoSecret
       Layers:
         - !Ref SharpLayer
       Environment:
         Variables:
           BUCKET_NAME: !Ref SwagBucket
+          CACHE_NAME: !Ref DefaultCache
+          SECRET_ID: !Ref MomentoSecret
 
   ProcessImageLabelsFunction:
     Type: AWS::Serverless::Function

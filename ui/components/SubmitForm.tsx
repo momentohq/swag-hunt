@@ -5,13 +5,15 @@ import { saveSwag, uploadPhoto } from '../services/SwagService';
 import { TopicClient, CredentialProvider, Configurations, TopicSubscribe, TopicItem } from '@gomomento/sdk-web';
 import { TailSpin } from 'react-loading-icons';
 import { NewSwag, NewSwagResponse } from '../utils/types';
+import { swagTypes } from '../utils/swag';
 
 interface FormData {
-  image: File | null;
-  from: string;
-  location: string;
-  tags: string[];
-  email: string;
+  image: File | null
+  from: string
+  location: string
+  tags: string[]
+  email: string
+  swagType?: string
 }
 
 interface Token {
@@ -33,7 +35,8 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
     from: '',
     location: '',
     tags: [],
-    email: ''
+    email: '',
+    swagType: showAdmin ? 'shirt' : null
   });
 
   const [refNumber, setRefNumber] = useState<string>();
@@ -64,7 +67,8 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
       from: formData.from,
       ...formData.location && { location: formData.location },
       ...formData.tags?.length && { tags: formData.tags },
-      ...formData.email && { email: formData.email }
+      ...formData.email && { email: formData.email },
+      ...formData.swagType && { type: formData.swagType }
     };
 
     const response: NewSwagResponse = await saveSwag(newSwag);
@@ -136,6 +140,10 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
     }
   };
 
+  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    updateFormData({ ...formData, [event.target.name]: event.target.value });
+  };
+
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     updateFormData({ ...formData, [event.target.name]: event.target.value });
   };
@@ -193,6 +201,23 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
           <input type="file" ref={fileInputRef} accept=".png, .jpg, .jpeg" onChange={handleImageChange} className="block w-full mt-1" />
           {imageError && <p className="text-red-500 text-sm mt-2">{imageError}</p>}
         </label>
+
+        {showAdmin && (
+          <label className="block">
+            <span className="block text-left">Type</span>
+            <select
+              name="swagType"
+              required
+              value={formData.swagType}
+              onChange={handleSelectChange}
+              className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
+            >
+              {swagTypes.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="block">
           <span className="block text-left">Who gave this to you?</span>

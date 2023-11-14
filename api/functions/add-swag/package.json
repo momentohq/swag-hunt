@@ -11,6 +11,7 @@
   "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.441.0",
     "@aws-sdk/client-eventbridge": "^3.445.0",
+    "@aws-sdk/client-secrets-manager": "^3.451.0",
     "@aws-sdk/client-sfn": "^3.450.0",
     "@aws-sdk/util-dynamodb": "^3.441.0"
   },

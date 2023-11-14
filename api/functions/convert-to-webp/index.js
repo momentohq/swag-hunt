@@ -1,7 +1,11 @@
+const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { CredentialProvider, CacheClient, Configurations, CacheSet } = require('@gomomento/sdk');
 const sharp = require("sharp");
 
 const s3 = new S3Client();
+const secrets = new SecretsManagerClient();
+let cacheClient;
 
 exports.handler = async (state) => {
   try {
@@ -31,6 +35,16 @@ exports.handler = async (state) => {
       },
     }));
 
+    try {
+      await setupCacheClient();
+      const cacheResponse = await cacheClient.set(process.env.CACHE_NAME, convertedKey, webpBuffer);
+      if (cacheResponse instanceof CacheSet.Error) {
+        console.error(cacheResponse.errorCode(), cacheResponse.message());
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+
     return { key: convertedKey };
   } catch (error) {
     console.error("Error: ", error);
@@ -54,5 +68,19 @@ const loadImageBuffer = async (key) => {
     stream.on('data', (chunk) => chunks.push(chunk));
     stream.once('end', () => resolve(Buffer.concat(chunks)));
     stream.once('error', reject);
+  });
+};
+
+const setupCacheClient = async () => {
+  if (cacheClient) {
+    return;
+  }
+
+  const secretResponse = await secrets.send(new GetSecretValueCommand({ SecretId: process.env.SECRET_ID }));
+  const secret = JSON.parse(secretResponse.SecretString);
+  cacheClient = await CacheClient.create({
+    configuration: Configurations.Lambda.latest(),
+    credentialProvider: CredentialProvider.fromString({ apiKey: secret.momento }),
+    defaultTtlSeconds: 90
   });
 };

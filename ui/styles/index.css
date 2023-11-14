@@ -13,9 +13,16 @@
   border: none;
   text-decoration: underline;
   cursor: pointer;
-  padding: 0; 
+  padding: 0;
 }
 
 .linkButton:hover {
   color: #0056b3; /* Darker blue on hover */
+}
+
+.mainTile {
+  background-image: url('/pattern.png');
+  background-size: contain;
+  background-position: top center;
+  background-repeat: repeat;
 }

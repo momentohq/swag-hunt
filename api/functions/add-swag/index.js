@@ -1,8 +1,11 @@
 const { SFNClient, StartExecutionCommand } = require('@aws-sdk/client-sfn');
+const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const Filter = require('bad-words');
 const filter = new Filter({ placeHolder: '' });
 
 const sfn = new SFNClient();
+const secrets = new SecretsManagerClient();
+let cachedSecrets;
 
 exports.handler = async (event) => {
   try {
@@ -27,6 +30,11 @@ exports.handler = async (event) => {
       }
     })?.filter(t => t) ?? [];
 
+    let adminSecret;
+    if (event.headers?.adminOverride) {
+      adminSecret = await getAdminSecret();
+    }
+
     const response = await sfn.send(new StartExecutionCommand({
       stateMachineArn: process.env.ADD_SWAG_STATE_MACHINE,
       input: JSON.stringify({
@@ -34,7 +42,8 @@ exports.handler = async (event) => {
         from: vendor,
         ...body.location && { location: filter.clean(body.location) },
         ...tags.length && { tags },
-        ...createdBy && { createdBy }
+        ...createdBy && { createdBy },
+        ...(body.type && adminSecret && adminSecret == event.headers.adminOverride) && { type: body.type }
       })
     }));
 
@@ -51,4 +60,13 @@ exports.handler = async (event) => {
       headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
     };
   }
-}
+};
+
+const getAdminSecret = async () => {
+  if (!cachedSecrets) {
+    const secretResponse = await secrets.send(new GetSecretValueCommand({ SecretId: process.env.SECRET_ID }));
+    cachedSecrets = JSON.parse(secretResponse.SecretString);
+  }
+
+  return cachedSecrets.admin;
+};

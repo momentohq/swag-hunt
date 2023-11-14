@@ -137,7 +137,7 @@
       "Choices": [
         {
           "Not": {
-            "Variable": "$.exitingItem.Item.pk",
+            "Variable": "$.existingItem.Item.pk",
             "IsPresent": true
           },
           "Next": "Save Swag"
