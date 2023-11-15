@@ -28,6 +28,9 @@ module.exports = {
         'momento-light-squirrel': '#e1d9d5',
         'momento-light-mint': '#abe7d2',
         'momento-light-electric': '#eaf8b6'
+      },
+      fontFamily: {
+        heading: ['Manrope', 'sans-serif']
       }
     },
   },

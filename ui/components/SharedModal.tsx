@@ -92,7 +92,7 @@ export default function SharedModal({
                 <>
                   {index > 0 && (
                     <button
-                      className="absolute left-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
+                      className="absolute left-3 top-[calc(50%-16px)] rounded-full bg-momento-electric-green p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
                       style={{ transform: 'translate3d(0, 0, 0)' }}
                       onClick={() => changePhoto(swagImages[index - 1])}
                     >
@@ -101,7 +101,7 @@ export default function SharedModal({
                   )}
                   {index + 1 < images.length && (
                     <button
-                      className="absolute right-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
+                      className="absolute right-3 top-[calc(50%-16px)] rounded-full bg-momento-electric-green p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
                       style={{ transform: 'translate3d(0, 0, 0)' }}
                       onClick={() => changePhoto(swagImages[index + 1])}
                     >
@@ -113,7 +113,7 @@ export default function SharedModal({
               <div className="absolute top-0 right-0 flex items-center gap-2 p-3 text-white">
                 <a
                   href={currentPhoto}
-                  className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
                   target="_blank"
                   title="Open fullsize version"
                   rel="noreferrer"
@@ -122,7 +122,7 @@ export default function SharedModal({
                 </a>
                 <a
                   href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20I%20found%20at%20re:Invent!%0A%23reinvent%20%23swag%0A%0Ahttps://swaghunt.io/${from}/${type}`}
-                  className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
                   target="_blank"
                   title="Open fullsize version"
                   rel="noreferrer"
@@ -131,7 +131,7 @@ export default function SharedModal({
                 </a>
                 <button
                   onClick={() => downloadPhoto(currentPhoto)}
-                  className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
                   title="Download fullsize version"
                 >
                   <ArrowDownTrayIcon className="h-5 w-5" />
@@ -140,7 +140,7 @@ export default function SharedModal({
               <div className="absolute top-0 left-0 flex items-center gap-2 p-3 text-white">
                 <button
                   onClick={() => closeModal()}
-                  className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
                 >
                   {navigation ? (
                     <XMarkIcon className="h-5 w-5" />

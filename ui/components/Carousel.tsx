@@ -24,7 +24,7 @@ export default function Carousel({ swag }: { swag: SwagDetail }) {
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center">
       <button
-        className="absolute inset-0 z-30 cursor-default bg-black backdrop-blur-2xl text-white"
+        className="absolute inset-0 z-30 cursor-default bg-momento-forest-green opacity-80 backdrop-blur-2xl text-white"
         onClick={closeModal}
       />
       <div className="text-white z-50 mb-4 text-center">

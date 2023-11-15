@@ -54,14 +54,8 @@ const Home: NextPage = () => {
     <>
       <Head>
         <title>Swag Hunt</title>
-        <meta
-          property="og:image"
-          content="https://nextjsconf-pics.vercel.app/og-image.png"
-        />
-        <meta
-          name="twitter:image"
-          content="https://nextjsconf-pics.vercel.app/og-image.png"
-        />
+        <meta property="og:image" content="/ogSwaghunt.png" />
+        <meta name="twitter:image" content="/ogSwaghunt.png" />
       </Head>
       <main className="mx-auto max-w-[1960px] p-4">
 
@@ -69,7 +63,6 @@ const Home: NextPage = () => {
         <div className="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4">
           <div className="mainTile after:content relative mb-5 flex h-[500px] flex-col items-center justify-center gap-4 overflow-hidden rounded-lg bg-momento-forest-green px-6 text-center text-white shadow-highlight after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight lg:pt-0">
             <div className="absolute inset-0 flex items-center justify-center opacity-20">
-
               <span className="absolute left-0 right-0 bottom-0 h-[400px] bg-gradient-to-b from-black/0 via-black to-black"></span>
             </div>
             <div className='px-5 w-full'>
@@ -83,7 +76,7 @@ const Home: NextPage = () => {
               />
             </div>
             <input
-              className="w-fill z-10 text-black mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm"
+              className="w-fill z-10 text-black mt-1 block w-full rounded-sm p-1 shadow-sm focus:border-momento-mint-green"
               name="search"
               placeholder="  Search for swag"
               value={searchQuery}
@@ -91,7 +84,7 @@ const Home: NextPage = () => {
               onKeyDown={handleSearchQueryChanged}
             />
             <p className="max-w-[40ch] text-white/75 sm:max-w-[32ch] z-10">
-              Want to add some swag? <button className="linkButton" onClick={() => setShowAddSwag(true)}>Click Here!</button>
+              Want to add some swag? <button className="linkButton text-momento-mint-green hover:text-momento-dark-mint" onClick={() => setShowAddSwag(true)}>Click Here!</button>
             </p>
           </div>
           {swag.map(({ from, type, url, upvotes }) => (

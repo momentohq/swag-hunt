@@ -22,7 +22,7 @@
 
 .mainTile {
   background-image: url('/pattern.png');
-  background-size: contain;
+  background-size: 250px 250px;
   background-position: top center;
   background-repeat: repeat;
 }

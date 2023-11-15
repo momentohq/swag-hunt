@@ -7,24 +7,15 @@ class MyDocument extends Document {
         <Head>
           <link rel="icon" href="/favicon.png" />
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
-          <meta
-            name="description"
-            content="See pictures from Next.js Conf and the After Party."
-          />
-          <meta property="og:site_name" content="nextjsconf-pics.vercel.app" />
-          <meta
-            property="og:description"
-            content="See pictures from Next.js Conf and the After Party."
-          />
-          <meta property="og:title" content="Next.js Conf 2022 Pictures" />
+          <meta name="description" content="Search for and share the best swag at re:Invent 2023 with Swaghunt—powered by Momento" />
+          <meta property="og:site_name" content="Swag Hunt" />
+          <meta property="og:description" content="Search for and share the best swag at re:Invent 2023 with Swaghunt—powered by Momento" />
+          <meta property="og:title" content="Swag Hunt" />
           <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content="Next.js Conf 2022 Pictures" />
-          <meta
-            name="twitter:description"
-            content="See pictures from Next.js Conf and the After Party."
-          />
+          <meta name="twitter:title" content="Swag Hunt" />
+          <meta name="twitter:description" content="Search for and share the best swag at re:Invent 2023 with Swaghunt—powered by Momento" />
         </Head>
-        <body className="bg-black antialiased">
+        <body className="bg-momento-dark-forest antialiased">
           <Main />
           <NextScript />
         </body>

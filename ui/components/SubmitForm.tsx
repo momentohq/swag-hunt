@@ -181,11 +181,11 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
         ref={overlayRef}
         as={motion.div}
         key="backdrop"
-        className="fixed inset-0 z-30 bg-black/70 backdrop-blur-2xl"
+        className="fixed inset-0 z-30 bg-momento-forest-green/80 backdrop-blur-2xl"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       />
-      <form onSubmit={handleSubmit} className="mb-5 flex h-fit flex-col justify-end gap-4 overflow-hidden rounded-lg bg-white/10 px-6 pb-8 text-center text-white shadow-highlight lg:pt-0 z-50">
+      <form onSubmit={handleSubmit} className="mb-5 flex h-fit flex-col justify-end gap-4 overflow-hidden rounded-lg bg-momento-dark-forest px-6 pb-8 text-center text-white shadow-highlight lg:pt-0 z-50">
         <h1 className="text-center text-3xl font-bold mt-4">Found some swag?</h1>
         <hr />
         {showAdmin && (<input
@@ -256,7 +256,7 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
           />
           <div className="mt-3">
             {formData.tags.map((tag, index) => (
-              <span key={index} className="inline-block bg-momento-light-mint text-black text-xs font-semibold mr-2 px-2.5 py-1 rounded-lg">
+              <span key={index} className="inline-block bg-momento-electric-green text-momento-forest-green text-xs font-semibold mr-2 px-2.5 py-1 rounded-lg">
                 {tag}
               </span>
             ))}
@@ -270,12 +270,12 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
+            className="mt-1 block w-full rounded-sm p-1 shadow-sm text-black"
             placeholder="(Optional) Enter for a raffle entry"
           />
         </label>
 
-        <button disabled={!canSubmit} type="submit" className="py-2 px-4 mt-2 bg-momento-mint-green text-black font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none">
+        <button disabled={!canSubmit} type="submit" className="py-2 px-4 mt-2 bg-momento-electric-green text-momento-forest-green font-semibold rounded-lg shadow-md hover:bg-momento-mint-green focus:outline-none">
           {isProcessing ? (
             <>
               <div className="flex justify-center items-center gap-1">
