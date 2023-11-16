@@ -1,4 +1,4 @@
-import { NewSwag, NewSwagResponse, SwagDetail, SwagList, UploadDetails } from "../utils/types";
+import { NewSwag, NewSwagResponse, SwagDetail, SwagList, UpdateSwag, UploadDetails } from "../utils/types";
 
 const SwagAPI: string = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -17,7 +17,7 @@ export const uploadPhoto = async ({ photo, referenceNumber, adminOverride }: Upl
       queryParams.append('referenceNumber', referenceNumber);
     }
 
-    if(adminOverride){
+    if (adminOverride) {
       queryParams.append('adminOverride', adminOverride);
     }
 
@@ -90,7 +90,6 @@ export const getSwagList = async ({ pageToken }: GetSwagListParams): Promise<Swa
     }
 
     const swagList: SwagList = await response.json();
-    console.log(swagList)
     return swagList;
   } catch (err) {
     console.error(err);
@@ -116,12 +115,54 @@ export const swagSearch = async (query: string): Promise<SwagList> => {
   try {
     const response: Response = await fetch(`${SwagAPI}/swag/search`, {
       method: 'POST',
-      body: JSON.stringify({query})
+      body: JSON.stringify({ query })
     });
 
     return await response.json() as SwagList;
   } catch (err) {
     console.error(err);
     return { swag: [] };
+  }
+}
+
+export const updateSwag = async (swag: UpdateSwag, from: string, type: string, adminOverride: string): Promise<void> => {
+  try {
+    const response: Response = await fetch(`${SwagAPI}/swag/${from}/${type}`, {
+      method: 'PUT',
+      headers: {
+        'x-momento-admin-override': adminOverride
+      },
+      body: JSON.stringify(swag)
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      console.error(data.message);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+interface UpvoteResponse {
+  message?: string
+  newValue?: Number
+}
+
+export const upvote = async (from: string, type: string, upvoteCount: Number): Promise<Number> => {
+  try {
+    const response: Response = await fetch(`${SwagAPI}/swag/${from}/${type}/upvotes`, {
+      method: 'POST'
+    });
+
+    const data: UpvoteResponse = await response.json();
+    if (!response.ok) {
+      console.warn(data.message);
+      return upvoteCount;
+    }
+
+    return data.newValue;
+  } catch (err) {
+    console.error(err);
+    return upvoteCount;
   }
 }

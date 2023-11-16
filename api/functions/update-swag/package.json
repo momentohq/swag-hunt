@@ -1,0 +1,20 @@
+{
+  "name": "update-swag",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.451.0",
+    "@aws-sdk/client-secrets-manager": "^3.451.0",
+    "@aws-sdk/client-sfn": "^3.451.0",
+    "@aws-sdk/util-dynamodb": "^3.451.0"
+  },
+  "dependencies": {
+    "bad-words": "^3.0.4"
+  }
+}

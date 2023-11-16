@@ -49,3 +49,11 @@ export interface NewSwagResponse {
   type?: string
   message?: string
 }
+
+export interface UpdateSwag {
+  from: string
+  type: string
+  url: string
+  location?: string
+  tags?: string[]
+}

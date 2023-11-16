@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@gomomento/sdk": "^1.51.1"
+  },
+  "name": "remove-embedding",
+  "version": "1.0.0",
+  "description": "Removes embeddings from MVI",
+  "main": "index.js",
+  "devDependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.451.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

@@ -11,7 +11,7 @@ import { Puff } from 'react-loading-icons';
 const DetailPage: NextPage = () => {
   const [swag, setSwag] = useState<SwagDetail | null>(null);
   const router = useRouter();
-  const { from, type } = router.query;
+  const { from, type, admin } = router.query;
 
   useEffect(() => {
     const fetchSwagDetail = async () => {
@@ -41,7 +41,7 @@ const DetailPage: NextPage = () => {
           <title>Swag | Swag Hunt</title>
         </Head>
         <main className="flex h-screen items-center justify-center p-4">
-          <Puff className="w-64 h-64" /> 
+          <Puff className="w-64 h-64" />
         </main>
       </>
     );
@@ -56,7 +56,7 @@ const DetailPage: NextPage = () => {
         <meta name="twitter:image" content={swag.url} />
       </Head>
       <main className="mx-auto max-w-[1960px] p-4">
-        <Carousel swag={swag} />
+        <Carousel swag={swag} admin={admin?.toString()} />
       </main>
     </>
   );

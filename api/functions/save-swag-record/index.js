@@ -5,12 +5,12 @@ const ddb = new DynamoDBClient();
 
 exports.handler = async (state) => {
   const swag = {
-    pk: `${state.input.from}#${state.input.type ?? state.type}`,
+    pk: `${state.overrides?.from ?? state.input.from}#${state.overrides?.type ?? state.input.type ?? state.type}`,
     sk: 'swag',
     type: 'swag',
     sort: 1,
-    from: state.input.from,
-    swagType: state.input.type ?? state.type,
+    from: state.overrides?.from ?? state.input.from,
+    swagType: state.overrides.type ?? state.input.type ?? state.type,
     url: state.url,
     etag: new Date().toISOString(),
     ...state.input.location && { location: state.input.location },

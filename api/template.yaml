@@ -35,7 +35,7 @@ Globals:
   Api:
     Cors:
       AllowMethods: "'POST,GET,PUT,OPTIONS'"
-      AllowHeaders: "'Content-Type'"
+      AllowHeaders: "'Content-Type,x-momento-admin-override'"
       AllowOrigin: "'*'"
 
 Resources:
@@ -217,6 +217,33 @@ Resources:
             Path: /swag
             Method: POST
 
+  UpdateSwagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/update-swag
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: states:StartExecution
+              Resource: !Ref UpdateSwagStateMachine
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref MomentoSecret
+      Environment:
+        Variables:
+          UPDATE_SWAG_STATE_MACHINE: !Ref UpdateSwagStateMachine
+          SECRET_ID: !Ref MomentoSecret
+      Events:
+        FromApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SwagApi
+            Path: /swag/{from}/{type}
+            Method: PUT
+
   GetSwagFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -274,6 +301,22 @@ Resources:
             - Effect: Allow
               Action: bedrock:InvokeModel
               Resource: '*'
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref MomentoSecret
+      Environment:
+        Variables:
+          SECRET_ID: !Ref MomentoSecret
+
+  RemoveEmbeddingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/remove-embedding
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
             - Effect: Allow
               Action:
                 - secretsmanager:GetSecretValue
@@ -573,6 +616,39 @@ Resources:
               Resource:
                 - !GetAtt SaveSwagRecordFunction.Arn
                 - !GetAtt CreateSwagEmbeddingFunction.Arn
+
+  UpdateSwagStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: workflows/update-swag.asl.json
+      DefinitionSubstitutions:
+        DynamoDBGetItem: !Sub arn:${AWS::Partition}:states:::dynamodb:getItem
+        DynamoDBDeleteItem: !Sub arn:${AWS::Partition}:states:::dynamodb:deleteItem
+        DynamoDBQuery: !Sub arn:${AWS::Partition}:states:::aws-sdk:dynamodb:query
+        DynamoDBUpdateItem: !Sub arn:${AWS::Partition}:states:::dynamodb:updateItem
+        DynamoDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
+        LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
+        SwagTable: !Ref SwagTable
+        SaveSwagFunction: !GetAtt SaveSwagRecordFunction.Arn
+        AddToMVIFunction: !GetAtt CreateSwagEmbeddingFunction.Arn
+        RemoveEmbeddingFunction: !GetAtt RemoveEmbeddingFunction.Arn
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+                - dynamodb:UpdateItem
+                - dynamodb:PutItem
+              Resource: !GetAtt SwagTable.Arn
+            - Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource:
+                - !GetAtt SaveSwagRecordFunction.Arn
+                - !GetAtt CreateSwagEmbeddingFunction.Arn
+                - !GetAtt RemoveEmbeddingFunction.Arn
 
   GetSwagTypeFunction:
     Type: AWS::Serverless::Function

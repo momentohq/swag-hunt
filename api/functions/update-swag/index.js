@@ -9,20 +9,18 @@ let cachedSecrets;
 
 exports.handler = async (event) => {
   try {
-    const body = JSON.parse(event.body);
-    const vendor = body.from.toLowerCase().trim();
-    if (filter.isProfane(vendor)) {
+    const adminOverride = getMomentoAdminHeader(event.headers);
+    const adminSecret = await getAdminSecret();
+    if (!adminOverride || adminOverride !== adminSecret) {
       return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'Please refrain from using profanity' }),
+        statusCode: 403,
+        body: JSON.stringify({ message: 'You cannot access this endpoint' }),
         headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
-      }
+      };
     }
 
-    let createdBy = body.createdBy;
-    if (createdBy && filter.isProfane(createdBy)) {
-      createdBy = undefined;
-    }
+    const { from, type} = event.pathParameters;
+    const body = JSON.parse(event.body);
 
     const tags = body.tags?.map(tag => {
       if (!filter.isProfane(tag)) {
@@ -30,20 +28,16 @@ exports.handler = async (event) => {
       }
     })?.filter(t => t) ?? [];
 
-    let adminSecret;
-    if (event.headers?.adminOverride) {
-      adminSecret = await getAdminSecret();
-    }
-
     const response = await sfn.send(new StartExecutionCommand({
-      stateMachineArn: process.env.ADD_SWAG_STATE_MACHINE,
+      stateMachineArn: process.env.UPDATE_SWAG_STATE_MACHINE,
       input: JSON.stringify({
-        referenceNumber: body.referenceNumber.trim(),
-        from: vendor,
+        from: from.toLowerCase().trim(),
+        type: type.toLowerCase().trim(),
+        newFrom: body.from.toLowerCase().trim(),
+        newType: body.type.toLowerCase().trim(),
+        url: body.url.trim(),
         ...body.location && { location: filter.clean(body.location).trim() },
-        ...tags.length && { tags },
-        ...createdBy && { createdBy },
-        ...(body.type && adminSecret && adminSecret == event.headers.adminOverride) && { type: body.type }
+        tags
       })
     }));
 
@@ -52,6 +46,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({ id: response.executionArn.split(':').pop() }),
       headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
     };
+
   } catch (err) {
     console.error(err);
     return {
@@ -69,4 +64,14 @@ const getAdminSecret = async () => {
   }
 
   return cachedSecrets.admin;
+};
+
+const getMomentoAdminHeader = (headers) => {
+  for (let key in headers) {
+      if (headers.hasOwnProperty(key)) {
+          if (key.toLowerCase() === 'x-momento-admin-override') {
+              return headers[key];
+          }
+      }
+  }
 };

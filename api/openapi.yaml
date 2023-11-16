@@ -218,6 +218,40 @@ paths:
           Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetSwagDetailFunction.Arn}/invocations
         httpMethod: POST
         type: aws_proxy
+    put:
+      summary: Updates swag detail
+      tags:
+        - Swag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSwag'
+      responses:
+        202:
+          description: The operation was submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                required:
+                  - id
+        400:
+          $ref: '#/components/responses/BadRequest'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/UnknownError'
+      x-amazon-apigateway-request-validator: Validate All
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateSwagFunction.Arn}/invocations
+        httpMethod: POST
+        type: aws_proxy
 
   /swag/{from}/{type}/upvotes:
     parameters:
@@ -307,6 +341,28 @@ components:
           items:
             type: string
 
+    UpdateSwag:
+      type: object
+      properties:
+        from:
+          type: string
+        location:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        location:
+          type: string
+      required:
+        - from
+        - type
+        - url
+
   responses:
     Created:
       description: Successfully added into the system
@@ -358,6 +414,18 @@ components:
               message:
                 type: string
                 description: The image has not been through moderation
+    Unauthorized:
+      description: The caller is not allowed to perform the requested action
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+                description: You are not allowed to perform the requested action
     UnknownError:
       description: An unexpected error occurred on the server.
       content:

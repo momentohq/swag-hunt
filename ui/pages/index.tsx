@@ -4,12 +4,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
-import Bridge from '../components/Icons/Bridge'
 import SubmitForm from '../components/SubmitForm'
 import type { SwagSummary } from '../utils/types'
 import { useLastViewedPhoto } from '../utils/useLastViewedPhoto'
 import { getSwagList, swagSearch } from '../services/SwagService'
 import { toTitleCase } from '../utils/titleCase'
+import UpvotableImage from '../components/UpvotableImage'
 
 const Home: NextPage = () => {
   const router = useRouter();
@@ -88,26 +88,7 @@ const Home: NextPage = () => {
             </p>
           </div>
           {swag.map(({ from, type, url, upvotes }) => (
-            <Link
-              key={`${from}#${type}`}
-              href={`/${from}/${type}`}
-              ref={`${from}#${type}` === lastViewedPhoto ? lastViewedPhotoRef : null}
-              shallow
-              className="after:content group relative mb-5 block w-full cursor-zoom-in after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight"
-            >
-              <Image
-                alt={`${toTitleCase(from)} ${toTitleCase(type)}`}
-                className="transform rounded-lg brightness-90 transition will-change-auto group-hover:brightness-110"
-                style={{ transform: 'translate3d(0, 0, 0)' }}
-                src={url}
-                width={720}
-                height={480}
-                sizes="(max-width: 640px) 100vw,
-                  (max-width: 1280px) 50vw,
-                  (max-width: 1536px) 33vw,
-                  25vw"
-              />
-            </Link>
+            <UpvotableImage from={from} type={type} url={url} upvotes={upvotes}/>
           ))}
         </div>
       </main>
@@ -118,15 +99,4 @@ const Home: NextPage = () => {
   )
 }
 
-export default Home
-
-export async function getServerSideProps() {
-  const swagList = await getSwagList({});
-
-  return {
-    props: {
-      swag: swagList.swag,
-      ...swagList.pageToken && { pageToken: swagList.pageToken }
-    }
-  };
-};
+export default Home;

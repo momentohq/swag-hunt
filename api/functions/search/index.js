@@ -7,6 +7,7 @@ const secrets = new SecretsManagerClient();
 let mviClient;
 let cacheClient;
 const CACHE_NAME = 'reinvent';
+const IMAGE_FILTER = 'https://assets.swaghunt.io';
 
 exports.handler = async (event) => {
   try {
@@ -32,10 +33,10 @@ exports.handler = async (event) => {
     } else if (result instanceof VectorSearch.Success) {
       const results = result.hits().map(hit => {
         console.log(hit);
-        if (hit.distance > .5) {
+        if (hit.distance > .4) {
           return hit.metadata;
         }
-      }).map(r => r) ?? [];
+      }).filter(r => r && r.url?.startsWith(IMAGE_FILTER)) ?? [];
 
       await cacheSearchResults(body.query, results);
 
