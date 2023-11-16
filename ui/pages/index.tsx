@@ -112,7 +112,7 @@ const Home: NextPage = () => {
               </div>
             ) : (
               swag?.map(({ from, type, url, upvotes }) => (
-                <UpvotableImage from={from} type={type} url={url} upvotes={upvotes} />
+                <UpvotableImage from={from} type={type} url={url} upvotes={upvotes} admin={admin}/>
               )))
           )}
 

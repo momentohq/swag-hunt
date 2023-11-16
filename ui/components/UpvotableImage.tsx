@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowUpIcon } from '@heroicons/react/24/solid';
 import { upvote } from '../services/SwagService';
 import { toTitleCase } from '../utils/titleCase';
 
@@ -11,9 +10,10 @@ interface UpvotableImageProps {
   type: string;
   url: string;
   upvotes?: number;
+  admin?: string
 }
 
-const UpvotableImage: React.FC<UpvotableImageProps> = ({ from, type, url, upvotes }) => {
+const UpvotableImage: React.FC<UpvotableImageProps> = ({ from, type, url, upvotes, admin }) => {
   const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
 
   const upvoteImage = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -27,7 +27,7 @@ const UpvotableImage: React.FC<UpvotableImageProps> = ({ from, type, url, upvote
     <div className="relative mb-5 block w-full">
       <Link
         key={`${from}#${type}`}
-        href={`/${from}/${type}`}
+        href={`/${from}/${type}${admin ? '?admin=' + admin : ''}`}
         shallow
         className="after:content group relative mb-5 block w-full cursor-zoom-in after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight"
       >
