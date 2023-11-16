@@ -275,7 +275,7 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
           />
         </label>
 
-        <button disabled={!canSubmit} type="submit" className="py-2 px-4 mt-2 bg-momento-electric-green text-momento-forest-green font-semibold rounded-lg shadow-md hover:bg-momento-mint-green focus:outline-none">
+        <button disabled={!canSubmit} type="submit" className="py-2 px-4 mt-2 bg-momento-electric-green text-momento-forest-green font-semibold rounded-3xl shadow-md hover:bg-momento-mint-green focus:outline-none">
           {isProcessing ? (
             <>
               <div className="flex justify-center items-center gap-1">

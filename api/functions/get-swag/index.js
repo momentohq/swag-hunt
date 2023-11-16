@@ -9,6 +9,7 @@ exports.handler = async (event) => {
     const results = await ddb.send(new QueryCommand({
       TableName: process.env.TABLE_NAME,
       IndexName: 'types',
+      ScanIndexForward: false,
       KeyConditionExpression: '#type = :type',
       ExpressionAttributeNames: {
         '#type': 'type'

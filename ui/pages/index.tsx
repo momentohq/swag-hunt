@@ -87,7 +87,7 @@ const Home: NextPage = () => {
               Want to add some swag? <button className="linkButton text-momento-mint-green hover:text-momento-dark-mint" onClick={() => setShowAddSwag(true)}>Click Here!</button>
             </p>
           </div>
-          {swag.map(({ from, type, url, upvotes }) => (
+          {swag?.map(({ from, type, url, upvotes }) => (
             <UpvotableImage from={from} type={type} url={url} upvotes={upvotes}/>
           ))}
         </div>

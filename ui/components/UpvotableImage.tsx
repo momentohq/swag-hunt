@@ -50,7 +50,7 @@ const UpvotableImage: React.FC<UpvotableImageProps> = ({ from, type, url, upvote
           <div className="flex flex-col gap-4 justify-center">
             <ArrowUpIcon className="h-5 w-5" />
             <div className=" text-black rounded px-2 py-1 text-xs">
-              {upvoteCount.toString()}
+              {upvoteCount?.toString()}
             </div>
           </div>
 
