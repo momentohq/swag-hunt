@@ -9,3 +9,7 @@ button {
 h1, h2, h3, h4 {
   font-family: 'Manrope', sans-serif;
 }
+
+.heroicon-sw-2 path {
+  stroke-width: 2 !important;
+}

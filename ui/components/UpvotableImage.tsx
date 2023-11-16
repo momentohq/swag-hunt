@@ -47,16 +47,13 @@ const UpvotableImage: React.FC<UpvotableImageProps> = ({ from, type, url, upvote
           className="absolute top-2 left-2 bg-white bg-opacity-50 rounded-full p-1 text-momento-forest-green hover:bg-opacity-70 focus:outline-none"
           onClick={(e: React.MouseEvent<HTMLButtonElement>) => upvoteImage(e)}
         >
-          <div className="flex flex-col gap-4 justify-center">
-            <ArrowUpIcon className="h-5 w-5" />
-            <div className=" text-black rounded px-2 py-1 text-xs">
+          <div className="flex flex-row gap-1 justify-center items-center">
+            <Image alt="upvote" src="/arrow.svg" width="12" height="12" className="ml-1" />
+            <div className="text-black rounded pr-2 ">
               {upvoteCount?.toString()}
             </div>
           </div>
-
-
         </button>
-
       </Link>
     </div >
   );

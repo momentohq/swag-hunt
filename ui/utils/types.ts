@@ -8,6 +8,7 @@ export interface SharedModalProps {
   changePhoto: (url: string) => void
   closeModal: () => void
   direction?: number
+  upvotes?: number
 }
 
 export interface SwagSummary {
@@ -40,7 +41,6 @@ export interface NewSwag {
   from: string
   referenceNumber: string
   location?: string
-  tags?: string[]
   email?: string
 }
 

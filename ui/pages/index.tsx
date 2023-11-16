@@ -1,24 +1,24 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import SubmitForm from '../components/SubmitForm'
 import type { SwagSummary } from '../utils/types'
 import { useLastViewedPhoto } from '../utils/useLastViewedPhoto'
 import { getSwagList, swagSearch } from '../services/SwagService'
-import { toTitleCase } from '../utils/titleCase'
 import UpvotableImage from '../components/UpvotableImage'
+import { Puff } from 'react-loading-icons';
 
 const Home: NextPage = () => {
   const router = useRouter();
 
-  const { photoId, admin } = router.query;
+  const { photoId, admin, s } = router.query;
   const [swag, setSwag] = useState<SwagSummary[]>([]);
   const [lastViewedPhoto, setLastViewedPhoto] = useLastViewedPhoto();
   const [showAddSwag, setShowAddSwag] = useState<Boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>();
+  const [isSearching, setIsSearching] = useState<Boolean>(false);
 
   const lastViewedPhotoRef = useRef<HTMLAnchorElement>(null)
 
@@ -32,8 +32,20 @@ const Home: NextPage = () => {
       }
     };
 
-    fetchSwagList();
-  }, []);
+    const search = async () => {
+      setIsSearching(true);
+      const results = await swagSearch(s.toString());
+      setSwag(results.swag);
+      setSearchQuery(s.toString());
+      setIsSearching(false);
+    }
+
+    if (s) {
+      search()
+    } else {
+      fetchSwagList();
+    }
+  }, [router.query]);
 
   useEffect(() => {
     if (lastViewedPhoto && !photoId) {
@@ -44,9 +56,11 @@ const Home: NextPage = () => {
 
   const handleSearchQueryChanged = async (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') {
-      setSearchQuery('');
-      const results = await swagSearch(searchQuery);
-      setSwag(results.swag);
+      if (searchQuery) {
+        router.push(`/?s=${searchQuery}`);
+      } else {
+        router.push('/');
+      }
     }
   }
 
@@ -87,9 +101,21 @@ const Home: NextPage = () => {
               Want to add some swag? <button className="linkButton text-momento-mint-green hover:text-momento-dark-mint" onClick={() => setShowAddSwag(true)}>Click Here!</button>
             </p>
           </div>
-          {swag?.map(({ from, type, url, upvotes }) => (
-            <UpvotableImage from={from} type={type} url={url} upvotes={upvotes}/>
-          ))}
+          {isSearching ? (
+            <div className="flex justify-center items-center text-white">
+              <Puff className="w-64 h-64" />
+            </div>
+          ) : (
+            swag?.length === 0 ? (
+              <div className="flex justify-center items-center text-white">
+                <p>No swag to see here</p>
+              </div>
+            ) : (
+              swag?.map(({ from, type, url, upvotes }) => (
+                <UpvotableImage from={from} type={type} url={url} upvotes={upvotes} />
+              )))
+          )}
+
         </div>
       </main>
       <footer className="p-6 text-center text-white/80 sm:p-12">

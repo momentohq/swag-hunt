@@ -175,8 +175,7 @@
               "Parameters": {
                 "topicName.$": "$.imageData.referencenumber",
                 "message": {
-                  "result": "Succeeded",
-                  "tags.$": "$.processedLabels.Payload.tags"
+                  "result": "Succeeded"
                 }
               },
               "Next": "Send Success Message"
@@ -211,6 +210,7 @@
                 "StateMachineArn": "${PostProcessingStateMachine}",
                 "Input": {
                   "labels.$": "$.processedLabels.Payload.labels",
+                  "tags.$": "$.processedLabels.Payload.tags",
                   "referenceNumber.$": "$.imageData.referencenumber",
                   "originalKey.$": "$$.Execution.Input.detail.object.key",
                   "lockStartTime.$": "$$.Execution.StartTime",

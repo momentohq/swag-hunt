@@ -314,10 +314,6 @@ components:
           type: string
         type:
           type: string
-        tags:
-          type: array
-          items:
-            type: string
         referenceNumber:
           type: string
         email:

@@ -19,7 +19,7 @@ exports.handler = async (event) => {
     if (cachedResult) {
       return {
         statusCode: 200,
-        body: JSON.stringify({ results: cachedResult }),
+        body: JSON.stringify({ swag: cachedResult }),
         headers: { 'Access-Control-Allow-Origin': process.env.CORS_ORIGIN }
       };
     }

@@ -5,15 +5,6 @@ import { updateSwag } from '../services/SwagService';
 import { UpdateSwag } from '../utils/types';
 import { swagTypes } from '../utils/swag';
 
-
-
-interface Message {
-  result: string
-  type?: string
-  tags?: string[]
-  message?: string
-}
-
 export default function EditForm({ showAdmin, data, onClose }: { showAdmin: string, data: UpdateSwag, onClose?: () => void }) {
   let overlayRef = useRef();
   const [formData, setFormData] = useState<UpdateSwag>(data);

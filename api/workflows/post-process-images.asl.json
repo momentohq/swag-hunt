@@ -206,14 +206,15 @@
             "S": "image"
           }
         },
-        "UpdateExpression": "SET #status = :success, #url = :url, #type = :type",
+        "UpdateExpression": "SET #status = :success, #url = :url, #type = :type, #tags = :tags",
         "ConditionExpression": "#lock.#startTime <= :startTime",
         "ExpressionAttributeNames": {
           "#status": "status",
           "#url": "url",
           "#lock": "lock",
           "#startTime": "startTime",
-          "#type": "type"
+          "#type": "type",
+          "#tags": "tags"
         },
         "ExpressionAttributeValues": {
           ":success": {
@@ -227,6 +228,9 @@
           },
           ":startTime": {
             "S.$": "$$.Execution.Input.lockStartTime"
+          },
+          ":tags": {
+            "S.$": "$$.Execution.Input.tags"
           }
         }
       },

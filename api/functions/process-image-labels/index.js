@@ -3,6 +3,6 @@ exports.handler = async (state) => {
     return `\t- name: ${label.Name}, categories: ${label.Categories.map(c => c.Name).join('/')}, confidence: ${label.Confidence}`;
   });
 
-  const tags = state.labels.filter(l => l.Confidence >= 80).map(l => l.Name);
+  const tags = state.labels.filter(l => l.Confidence >= 80).map(l => l.Name).join(',');
   return { labels, tags };
 };

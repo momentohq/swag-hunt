@@ -32,11 +32,6 @@ exports.handler = async (state) => {
       }
     ]);
 
-    console.log({
-      from: swag.from,
-      type: swag.swagType,
-      url: swag.url
-    });
     if (result instanceof VectorUpsertItemBatch.Error) {
       console.error(result.errorCode(), result.message());
       throw Error('Could not index provided item');
@@ -61,7 +56,7 @@ const normalize = (swag) => {
   for (const [key, value] of Object.entries(embeddedSwag)) {
     if (Array.isArray(value)) {
       resultArray.push(`${key}_${value.join(' ')}`);
-    } else {
+    } else if (key && value) {
       resultArray.push(`${key}_${value}`);
     }
   }

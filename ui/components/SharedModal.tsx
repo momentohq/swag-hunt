@@ -14,6 +14,7 @@ import { variants } from '../utils/animationVariants'
 import downloadPhoto from '../utils/downloadPhoto'
 import type { SharedModalProps } from '../utils/types'
 import Twitter from './Icons/Twitter'
+import { upvote } from '../services/SwagService'
 
 export default function SharedModal({
   from,
@@ -24,6 +25,7 @@ export default function SharedModal({
   changePhoto,
   closeModal,
   direction,
+  upvotes
 }: SharedModalProps) {
   const [loaded, setLoaded] = useState(false);
   const navigation = images.length > 0;
@@ -43,7 +45,16 @@ export default function SharedModal({
       }
     },
     trackMouse: true,
-  })
+  });
+
+  const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
+
+  const upvoteImage = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const newCount: Number = await upvote(from, type, upvoteCount);
+    setUpvoteCount(newCount);
+  }
 
   return (
     <MotionConfig
@@ -67,19 +78,19 @@ export default function SharedModal({
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className="absolute w-full h-full"
+                className="relative w-full h-full"
               >
                 <Image
                   src={currentPhoto}
                   layout="fill"
                   objectFit="contain"
-                  objectPosition="center"
                   priority
                   alt="Conference Swag"
                   onLoad={() => setLoaded(true)}
                 />
               </motion.div>
             </AnimatePresence>
+
           </div>
         </div>
 
@@ -121,7 +132,7 @@ export default function SharedModal({
                   <ArrowTopRightOnSquareIcon className="h-5 w-5" />
                 </a>
                 <a
-                  href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20I%20found%20at%20re:Invent!%0A%23reinvent%20%23swag%0A%0Ahttps://swaghunt.io/${from}/${type}`}
+                  href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20I%20found%20at%20re:Invent!%0A%23reinvent%20%23swag%0A%0Ahttps://swaghunt.io/${from}/${type}/`}
                   className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
                   target="_blank"
                   title="Open fullsize version"
@@ -137,7 +148,7 @@ export default function SharedModal({
                   <ArrowDownTrayIcon className="h-5 w-5" />
                 </button>
               </div>
-              <div className="absolute top-0 left-0 flex items-center gap-2 p-3 text-white">
+              <div className="absolute top-0 left-0 flex items-center gap-4 p-3 text-white">
                 <button
                   onClick={() => closeModal()}
                   className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
@@ -147,6 +158,18 @@ export default function SharedModal({
                   ) : (
                     <ArrowUturnLeftIcon className="h-5 w-5" />
                   )}
+                </button>
+                <button
+                  id="upvotebtn"
+                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => upvoteImage(e)}
+                >
+                  <div className="flex flex-row gap-1 justify-center items-center">
+                    <Image alt="upvote" src="/arrow.svg" width="12" height="12" className="ml-1" />
+                    <div className="text-black rounded pr-2 ">
+                      {upvoteCount?.toString()}
+                    </div>
+                  </div>
                 </button>
               </div>
             </div>

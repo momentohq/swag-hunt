@@ -10,7 +10,7 @@ exports.handler = async (state) => {
     type: 'swag',
     sort: 1,
     from: state.overrides?.from ?? state.input.from,
-    swagType: state.overrides.type ?? state.input.type ?? state.type,
+    swagType: state.overrides?.type ?? state.input.type ?? state.type,
     url: state.url,
     etag: new Date().toISOString(),
     ...state.input.location && { location: state.input.location },

@@ -24,12 +24,6 @@ exports.handler = async (event) => {
       createdBy = undefined;
     }
 
-    const tags = body.tags?.map(tag => {
-      if (!filter.isProfane(tag)) {
-        return tag.toLowerCase();
-      }
-    })?.filter(t => t) ?? [];
-
     let adminSecret;
     if (event.headers?.adminOverride) {
       adminSecret = await getAdminSecret();
@@ -41,7 +35,6 @@ exports.handler = async (event) => {
         referenceNumber: body.referenceNumber.trim(),
         from: vendor,
         ...body.location && { location: filter.clean(body.location).trim() },
-        ...tags.length && { tags },
         ...createdBy && { createdBy },
         ...(body.type && adminSecret && adminSecret == event.headers.adminOverride) && { type: body.type }
       })
