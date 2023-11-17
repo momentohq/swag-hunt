@@ -1,44 +1,40 @@
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
-const sharp = require("sharp");
+const convert = require('heic-convert');
+const sharp = require('sharp');
 
 const s3 = new S3Client();
 
 exports.handler = async (state) => {
   try {
     const object = await loadImageBuffer(state.key);
-    const image = sharp(object);
-    const metadata = await image.metadata();
+    const buffer = await convert({
+      buffer: object,
+      format: 'PNG'
+    });
 
-    // Calculate new dimensions while maintaining aspect ratio
-    const maxPixels = 10000; // Max pixels
-    const aspectRatio = metadata.width / metadata.height;
-    let newWidth, newHeight;
-
-    if (metadata.width > metadata.height) {
-      newWidth = Math.sqrt(maxPixels * aspectRatio);
-      newHeight = maxPixels / newWidth;
-    } else {
-      newHeight = Math.sqrt(maxPixels / aspectRatio);
-      newWidth = maxPixels / newHeight;
-    }
-
-    // Resize the image
-    const resizedImage = await image.resize(Math.round(newWidth), Math.round(newHeight)).toBuffer();
+    const resized = await sharp(buffer)
+      .resize({
+        width: 1920,
+        height: 1280,
+        fit: 'inside',
+        withoutEnlargement: true
+      }).toBuffer();
 
     await s3.send(new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME,
       Key: state.key,
-      Body: resizedImage,
-      ContentType: metadata.format,
+      Body: resized,
+      ContentType: 'image/x-png',
       Metadata: {
         referencenumber: getReferenceNumber(state.key),
       },
     }));
 
-    return { downscale_success: true }
-  } catch (error) {
-    console.error(error);
-    return { downscale_success: false }
+    return { convert_success: true };
+  }
+  catch (err) {
+    console.error(err);
+    return { convert_success: false }
   }
 };
 

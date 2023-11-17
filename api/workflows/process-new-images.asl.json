@@ -26,17 +26,49 @@
                   "ErrorEquals": [
                     "Rekognition.ImageTooLargeException"
                   ],
-                  "Next": "Downscale Photo",
+                  "Next": "Format Photo",
+                  "ResultPath": null
+                },
+                {
+                  "ErrorEquals": [
+                    "Rekognition.InvalidImageFormatException"
+                  ],
+                  "Next": "Convert From Heic",
                   "ResultPath": null
                 }
               ]
             },
-            "Downscale Photo": {
+            "Format Photo": {
               "Type": "Task",
               "Resource": "${LambdaInvoke}",
               "OutputPath": "$.Payload",
               "Parameters": {
-                "FunctionName": "${DownscalePhotoFunction}",
+                "FunctionName": "${FormatPhotoFunction}",
+                "Payload": {
+                  "key.$": "$$.Execution.Input.detail.object.key"
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            },
+            "Convert From Heic": {
+              "Type": "Task",
+              "Resource": "${LambdaInvoke}",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${ConvertHeicFunction}",
                 "Payload": {
                   "key.$": "$$.Execution.Input.detail.object.key"
                 }
@@ -335,11 +367,11 @@
         {
           "And": [
             {
-              "Variable": "$.imageDetail[0].downscale_success",
+              "Variable": "$.imageDetail[0].convert_success",
               "IsPresent": true
             },
             {
-              "Variable": "$.imageDetail[0].downscale_success",
+              "Variable": "$.imageDetail[0].convert_success",
               "BooleanEquals": true
             }
           ],
@@ -348,11 +380,11 @@
         {
           "And": [
             {
-              "Variable": "$.imageDetail[0].downscale_success",
+              "Variable": "$.imageDetail[0].convert_success",
               "IsPresent": true
             },
             {
-              "Variable": "$.imageDetail[0].downscale_success",
+              "Variable": "$.imageDetail[0].convert_success",
               "BooleanEquals": false
             }
           ],

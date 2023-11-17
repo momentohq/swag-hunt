@@ -21,6 +21,7 @@ const Home: NextPage = () => {
   const [isSearching, setIsSearching] = useState<Boolean>(false);
 
   const lastViewedPhotoRef = useRef<HTMLAnchorElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchSwagList = async () => {
@@ -61,6 +62,8 @@ const Home: NextPage = () => {
       } else {
         router.push('/');
       }
+
+      searchRef.current?.blur();
     }
   }
 
@@ -92,6 +95,7 @@ const Home: NextPage = () => {
             <input
               className="w-fill z-10 text-black mt-1 block w-full rounded-sm p-1 shadow-sm focus:border-momento-mint-green"
               name="search"
+              ref={searchRef}
               placeholder="  Search for swag"
               value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}

@@ -26,17 +26,12 @@ exports.handler = async (event) => {
 
     const embedding = await getSearchEmbedding(body.query);
     const result = await mviClient.search('swaghunt', embedding, {
-      topK: 100, metadataFields: ALL_VECTOR_METADATA
+      topK: 100, metadataFields: ALL_VECTOR_METADATA, scoreThreshold: .4
     });
     if (result instanceof VectorSearch.Error) {
       throw new Error(result.message());
     } else if (result instanceof VectorSearch.Success) {
-      const results = result.hits().map(hit => {
-        console.log(hit);
-        if (hit.distance > .4) {
-          return hit.metadata;
-        }
-      }).filter(r => r && r.url?.startsWith(IMAGE_FILTER)) ?? [];
+      const results = result.hits().map(hit => hit.metadata).filter(r => r && r.url?.startsWith(IMAGE_FILTER)) ?? [];
 
       await cacheSearchResults(body.query, results);
 

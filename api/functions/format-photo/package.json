@@ -1,0 +1,14 @@
+{
+  "name": "format-photo",
+  "version": "1.0.0",
+  "description": "Downscales photo and converts it to a png for image processing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.445.0"
+  }
+}

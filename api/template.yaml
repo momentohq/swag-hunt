@@ -407,10 +407,30 @@ Resources:
             Path: /swag/{from}/{type}
             Method: GET
 
-  DownscalePhotoFunction:
+  FormatPhotoFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/downscale-photo
+      CodeUri: functions/format-photo
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/quarantine/*
+      Layers:
+        - !Ref SharpLayer
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref SwagBucket
+
+  ConvertHeicFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/convert-heic
+      Timeout: 10
       Policies:
         - AWSLambdaBasicExecutionRole
         - Version: 2012-10-17
@@ -501,7 +521,8 @@ Resources:
         PostProcessingStateMachine: !Ref PostProcessSwagStateMachine
         SwagBucket: !Ref SwagBucket
         SwagTable: !Ref SwagTable
-        DownscalePhotoFunction: !GetAtt DownscalePhotoFunction.Arn
+        FormatPhotoFunction: !GetAtt FormatPhotoFunction.Arn
+        ConvertHeicFunction: !GetAtt ConvertHeicFunction.Arn
         ProcessImageLabelsFunction: !GetAtt ProcessImageLabelsFunction.Arn
       Policies:
         - Version: 2012-10-17
@@ -519,8 +540,9 @@ Resources:
             - Effect: Allow
               Action: lambda:InvokeFunction
               Resource:
-                - !GetAtt DownscalePhotoFunction.Arn
+                - !GetAtt FormatPhotoFunction.Arn
                 - !GetAtt ProcessImageLabelsFunction.Arn
+                - !GetAtt ConvertHeicFunction.Arn
             - Effect: Allow
               Action: events:PutEvents
               Resource: !Sub arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default

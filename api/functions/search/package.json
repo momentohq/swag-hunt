@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.445.0",
-    "@gomomento/sdk": "^1.46.2"
+    "@gomomento/sdk": "^1.51.1"
   },
   "devDependencies": {
     "@aws-sdk/client-secrets-manager": "^3.445.0"
