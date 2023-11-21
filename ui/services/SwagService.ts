@@ -166,3 +166,24 @@ export const upvote = async (from: string, type: string, upvoteCount: Number): P
     return upvoteCount;
   }
 }
+
+export const deleteSwag = async (from: string, type: string, url: string, adminOverride: string): Promise<Boolean> => {
+  try {
+    const response: Response = await fetch(`${SwagAPI}/swag/${from}/${type}?imageUrl=${url}`, {
+      method: 'DELETE',
+      headers: {
+        'x-momento-admin-override': adminOverride
+      }
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      console.warn(data.message);
+    }
+
+    return true;
+  } catch (err) {
+    console.error(err);
+    return false;
+  }
+}

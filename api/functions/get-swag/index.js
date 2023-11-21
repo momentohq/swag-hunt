@@ -5,7 +5,7 @@ const ddb = new DynamoDBClient();
 
 exports.handler = async (event) => {
   try {
-    const nextToken = event.queryStringParameters?.pageToken;
+    const nextToken = getPageToken(event.queryStringParameters?.pageToken);
     const results = await ddb.send(new QueryCommand({
       TableName: process.env.TABLE_NAME,
       IndexName: 'types',
@@ -17,6 +17,7 @@ exports.handler = async (event) => {
       ExpressionAttributeValues: marshall({
         ':type': 'swag'
       }),
+      Limit: 2,
       ...nextToken && { ExclusiveStartKey: nextToken }
     }));
 
@@ -34,7 +35,7 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         swag,
-        ...results.LastEvaluatedKey && { pageToken: results.LastEvaluatedKey }
+        ...results.LastEvaluatedKey && { pageToken: Buffer.from(JSON.stringify(results.LastEvaluatedKey)).toString('base64url') }
       }),
       headers: {
         'Access-Control-Allow-Origin': process.env.CORS_ORIGIN,
@@ -51,3 +52,15 @@ exports.handler = async (event) => {
     }
   }
 };
+
+const getPageToken = (encodedToken) => {
+  try{
+    if(encodedToken){
+      const token = Buffer.from(encodedToken, 'base64url');
+      return JSON.parse(token);
+    }
+  }catch(err){
+    console.warn(err);
+    // Do nothing, just load default
+  }
+}

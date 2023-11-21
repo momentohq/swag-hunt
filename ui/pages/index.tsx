@@ -1,5 +1,6 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
+import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
@@ -112,16 +113,16 @@ const Home: NextPage = () => {
             <div className="absolute inset-0 flex items-center justify-center opacity-20">
               <span className="absolute left-0 right-0 bottom-0 h-[400px] bg-gradient-to-b from-black/0 via-black to-black"></span>
             </div>
-            <div className='px-5 w-full'>
-              <Image
-                src="/logo.gif"
-                layout="responsive"
-                objectFit="contain"
-                width="400"
-                height="200"
-                alt="Swag Hunt Logo"
-              />
-            </div>
+            <Link href="/" className='z-50' onClick={() => setSearchQuery('')}>
+              <div className='px-5 w-full'>
+                <Image
+                  src="/logo.gif"
+                  width="400"
+                  height="200"
+                  alt="Swag Hunt Logo"
+                />
+              </div>
+            </Link>
             <input
               className="w-fill z-10 text-black mt-1 block w-full rounded-sm p-1 shadow-sm focus:border-momento-mint-green"
               name="search"
