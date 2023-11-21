@@ -74,7 +74,7 @@ const Home: NextPage = () => {
     return () => {
       observer.disconnect();
     };
-  }, [pageToken, swag.length]);
+  }, [pageToken, swag?.length]);
 
   const fetchSwagList = async () => {
     try {
