@@ -6,7 +6,7 @@ const ddb = new DynamoDBClient();
 exports.handler = async (event) => {
   try {
     const { from, type } = event.pathParameters;
-    const swagId = `${from}#${type}`;
+    const swagId = `${decodeURI(from.toLowerCase().trim())}#${decodeURI(type.toLowerCase().trim())}`;
 
     const response = await ddb.send(new UpdateItemCommand({
       TableName: process.env.TABLE_NAME,

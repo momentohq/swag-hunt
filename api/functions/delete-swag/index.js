@@ -28,7 +28,7 @@ exports.handler = async (event) => {
       TableName: process.env.TABLE_NAME,
       KeyConditionExpression: 'pk = :pk',
       ExpressionAttributeValues: marshall({
-        ':pk': `${from.toLowerCase().trim()}#${type.toLowerCase().trim()}`
+        ':pk': `${decodeURI(from.toLowerCase().trim())}#${decodeURI(type.toLowerCase().trim())}`
       })
     }));
 

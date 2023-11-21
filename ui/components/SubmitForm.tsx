@@ -27,7 +27,7 @@ interface Message {
   message?: string
 }
 
-export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string, onClose?: () => void }) {
+export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string, onClose?: (string?) => void }) {
   let overlayRef = useRef();
   const [formData, setFormData] = useState<FormData>({
     image: null,
@@ -71,7 +71,7 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
     if (response.message) {
       setSubmitError(response.message);
     } else {
-      onClose();
+      onClose('Thanks for the swag!');
     }
   };
 

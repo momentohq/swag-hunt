@@ -1,14 +1,10 @@
 /* eslint-disable no-unused-vars */
 export interface SharedModalProps {
-  from: string
-  type: string
   mainImage: string
   images?: string[]
   currentPhoto?: string
   changePhoto: (url: string) => void
-  closeModal: () => void
   direction?: number
-  upvotes?: number
 }
 
 export interface SwagSummary {

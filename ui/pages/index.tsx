@@ -10,6 +10,7 @@ import { useLastViewedPhoto } from '../utils/useLastViewedPhoto'
 import { getSwagList, swagSearch } from '../services/SwagService'
 import UpvotableImage from '../components/UpvotableImage'
 import { Puff } from 'react-loading-icons';
+import { toast } from 'react-toastify';
 
 const Home: NextPage = () => {
   const router = useRouter();
@@ -99,6 +100,19 @@ const Home: NextPage = () => {
     }
   };
 
+  const handleAddSwagClosed = (message?: string) => {
+    setShowAddSwag(false);
+    if(message){
+      toast.success(message, {
+        position: 'top-right',
+        autoClose: 3000,
+        draggable: false,
+        hideProgressBar: true,
+        theme: 'colored'
+      });
+    }
+  }
+
   return (
     <>
       <Head>
@@ -107,7 +121,7 @@ const Home: NextPage = () => {
         <meta name="twitter:image" content="/ogSwaghunt.png" />
       </Head>
       <main className="mx-auto max-w-[1960px] p-4">
-        {showAddSwag && <SubmitForm showAdmin={admin?.toString()} onClose={() => { setShowAddSwag(false) }} />}
+        {showAddSwag && <SubmitForm showAdmin={admin?.toString()} onClose={(message?: string) => { handleAddSwagClosed(message) }} />}
         <div className="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4">
           <div className="mainTile after:content relative mb-5 flex h-[500px] flex-col items-center justify-center gap-4 overflow-hidden rounded-lg bg-momento-forest-green px-6 text-center text-white shadow-highlight after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight lg:pt-0">
             <div className="absolute inset-0 flex items-center justify-center opacity-20">

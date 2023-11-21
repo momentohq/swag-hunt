@@ -31,8 +31,8 @@ exports.handler = async (event) => {
     const response = await sfn.send(new StartExecutionCommand({
       stateMachineArn: process.env.UPDATE_SWAG_STATE_MACHINE,
       input: JSON.stringify({
-        from: from.toLowerCase().trim(),
-        type: type.toLowerCase().trim(),
+        from: decodeURI(from.toLowerCase().trim()),
+        type: decodeURI(type.toLowerCase().trim()),
         newFrom: body.from.toLowerCase().trim(),
         newType: body.type.toLowerCase().trim(),
         url: body.url.trim(),

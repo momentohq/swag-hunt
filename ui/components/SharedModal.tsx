@@ -1,33 +1,11 @@
-import {
-  ArrowDownTrayIcon,
-  ArrowTopRightOnSquareIcon,
-  ArrowUturnLeftIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline'
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
 import Image from 'next/image'
-import { useState } from 'react'
 import { useSwipeable } from 'react-swipeable'
 import { variants } from '../utils/animationVariants'
-import downloadPhoto from '../utils/downloadPhoto'
 import type { SharedModalProps } from '../utils/types'
-import Twitter from './Icons/Twitter'
-import { upvote } from '../services/SwagService'
+import { Puff } from 'react-loading-icons'
 
-export default function SharedModal({
-  from,
-  type,
-  mainImage,
-  images,
-  currentPhoto,
-  changePhoto,
-  closeModal,
-  direction,
-  upvotes
-}: SharedModalProps) {
-  const [loaded, setLoaded] = useState(false);
+export default function SharedModal({ mainImage, images, currentPhoto, changePhoto, direction }: SharedModalProps) {
   const navigation = images.length > 0;
   let swagImages = [mainImage, ...images];
 
@@ -47,19 +25,10 @@ export default function SharedModal({
     trackMouse: true,
   });
 
-  const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
-
-  const upvoteImage = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const newCount: Number = await upvote(from, type, upvoteCount);
-    setUpvoteCount(newCount);
-  }
-
   return (
     <MotionConfig
       transition={{
-        x: { type: 'spring', stiffness: 300, damping: 30 },
+        x: { type: 'spring', stiffness: 100, damping: 20 },
         opacity: { duration: 0.2 },
       }}
     >
@@ -67,13 +36,11 @@ export default function SharedModal({
         className="relative z-50 flex h-3/6 w-full max-w-7xl items-center wide:h-full xl:taller-than-854:h-auto"
         {...handlers}
       >
-        {/* Main image */}
         <div className="w-full overflow-hidden h-full">
           <div className="relative flex h-full lg:aspect-[3/2] items-center justify-center">
             <AnimatePresence initial={false} custom={direction}>
               <motion.div
                 key={currentPhoto}
-                custom={direction}
                 variants={variants}
                 initial="enter"
                 animate="center"
@@ -86,94 +53,13 @@ export default function SharedModal({
                   objectFit="contain"
                   priority
                   alt="Conference Swag"
-                  onLoad={() => setLoaded(true)}
                 />
               </motion.div>
             </AnimatePresence>
           </div>
         </div>
 
-        {/* Buttons + bottom nav bar */}
         <div className="absolute inset-0 mx-auto flex max-w-7xl items-center justify-center">
-          {/* Buttons */}
-          {loaded && (
-            <div className="relative h-full mt-12 lg:h-auto lg:mt-o lg:aspect-[3/2] max-h-full w-full">
-              {navigation && (
-                <>
-                  {index > 0 && (
-                    <button
-                      className="absolute left-3 top-[calc(50%-16px)] rounded-full bg-momento-electric-green p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
-                      style={{ transform: 'translate3d(0, 0, 0)' }}
-                      onClick={() => changePhoto(swagImages[index - 1])}
-                    >
-                      <ChevronLeftIcon className="h-6 w-6" />
-                    </button>
-                  )}
-                  {index + 1 < images.length && (
-                    <button
-                      className="absolute right-3 top-[calc(50%-16px)] rounded-full bg-momento-electric-green p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
-                      style={{ transform: 'translate3d(0, 0, 0)' }}
-                      onClick={() => changePhoto(swagImages[index + 1])}
-                    >
-                      <ChevronRightIcon className="h-6 w-6" />
-                    </button>
-                  )}
-                </>
-              )}
-              <div className="absolute top-0 right-0 flex items-center gap-2 p-3 text-white">
-                <a
-                  href={currentPhoto}
-                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
-                  target="_blank"
-                  title="Open fullsize version"
-                  rel="noreferrer"
-                >
-                  <ArrowTopRightOnSquareIcon className="h-5 w-5" />
-                </a>
-                <a
-                  href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20I%20found%20at%20re:Invent%20on%20!%0A%23reinvent%20%23swag%0A%0Ahttps://swaghunt.io/${from}/${type}/`}
-                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
-                  target="_blank"
-                  title="Open fullsize version"
-                  rel="noreferrer"
-                >
-                  <Twitter className="h-5 w-5" />
-                </a>
-                <button
-                  onClick={() => downloadPhoto(currentPhoto)}
-                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
-                  title="Download fullsize version"
-                >
-                  <ArrowDownTrayIcon className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="absolute top-0 left-0 flex items-center gap-4 p-3 text-white">
-                <button
-                  onClick={() => closeModal()}
-                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
-                >
-                  {navigation ? (
-                    <XMarkIcon className="h-5 w-5" />
-                  ) : (
-                    <ArrowUturnLeftIcon className="h-5 w-5" />
-                  )}
-                </button>
-                <button
-                  id="upvotebtn"
-                  className="rounded-full bg-momento-electric-green p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
-                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => upvoteImage(e)}
-                >
-                  <div className="flex flex-row gap-1 justify-center items-center">
-                    <Image alt="upvote" src="/arrow.svg" width="12" height="12" className="ml-1" />
-                    <div className="text-black rounded pr-2 ">
-                      {upvoteCount?.toString()}
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-          {/* Bottom Nav bar */}
           {navigation && (
             <div className="fixed inset-x-0 bottom-0 z-40 overflow-hidden bg-gradient-to-b from-black/0 to-black/60">
               <motion.div

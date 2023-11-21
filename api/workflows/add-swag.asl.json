@@ -54,13 +54,13 @@
       "Type": "Task",
       "Resource": "${DynamoDBDeleteItem}",
       "Parameters": {
-        "TableName": "MyDynamoDBTable",
+        "TableName": "${SwagTable}",
         "Key": {
           "pk": {
-            "S.$": "$$.Execution.Input.swagKey"
+            "S.$": "$$.Execution.Input.referenceNumber"
           },
           "sk": {
-            "S": "swag"
+            "S": "image"
           }
         }
       },

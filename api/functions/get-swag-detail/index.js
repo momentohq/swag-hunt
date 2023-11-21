@@ -10,7 +10,7 @@ let cacheClient;
 exports.handler = async (event) => {
   try {
     await setupCacheClient();
-    const swagKey = `${event.pathParameters.from.toLowerCase().trim()}#${event.pathParameters.type.toLowerCase().trim()}`;
+    const swagKey = `${decodeURI(event.pathParameters.from.toLowerCase().trim())}#${decodeURI(event.pathParameters.type.toLowerCase().trim())}`;
     const cacheResponse = await cacheClient.get(process.env.CACHE_NAME, swagKey);
     if (cacheResponse instanceof CacheGet.Hit) {
       const data = JSON.parse(cacheResponse.value());

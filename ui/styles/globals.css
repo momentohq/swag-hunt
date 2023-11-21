@@ -13,3 +13,8 @@ h1, h2, h3, h4 {
 .heroicon-sw-2 path {
   stroke-width: 2 !important;
 }
+
+:root {
+  --toastify-color-success: #C4F135;
+  --toastify-text-color-success: #0e2515;
+}
