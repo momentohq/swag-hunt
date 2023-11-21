@@ -31,7 +31,9 @@ exports.handler = async (event) => {
     if (result instanceof VectorSearch.Error) {
       throw new Error(result.message());
     } else if (result instanceof VectorSearch.Success) {
-      const results = result.hits().map(hit => hit.metadata).filter(r => r && r.url?.startsWith(IMAGE_FILTER)) ?? [];
+      const results = result.hits().map(hit => {
+        return hit.metadata;
+      }).filter(r => r && r.url?.startsWith(IMAGE_FILTER)) ?? [];
 
       await cacheSearchResults(body.query, results);
 
@@ -80,7 +82,8 @@ const getCachedSearchResults = async (query) => {
 const getCachedQuery = async (query) => {
   const result = await cacheClient.get(CACHE_NAME, query);
   if (result instanceof CacheGet.Hit) {
-    return result.valueUint8Array();
+    const embedding = result.value();
+    return JSON.parse(embedding);
   }
 };
 
@@ -104,7 +107,7 @@ const cacheSearchResults = async (query, results) => {
  * Cache the search query for 24 hours
  */
 const cacheQuery = async (query, embedding) => {
-  const result = await cacheClient.set(CACHE_NAME, query, embedding, { ttl: 86400 });
+  const result = await cacheClient.set(CACHE_NAME, query, JSON.stringify(embedding), { ttl: 86400 });
   if (result instanceof CacheSet.Error) {
     console.error('Error caching search query', result.errorCode(), result.message())
   }

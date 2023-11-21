@@ -56,186 +56,21 @@
       "Type": "Parallel",
       "Branches": [
         {
-          "StartAt": "Get Additional Images",
+          "StartAt": "Adjust Additional Swag Records",
           "States": {
-            "Get Additional Images": {
+            "Adjust Additional Swag Records": {
               "Type": "Task",
+              "Resource": "${StepFunctionsStartExecution}",
               "Parameters": {
-                "TableName": "${SwagTable}",
-                "KeyConditionExpression": "pk = :pk and begins_with(sk, :sk)",
-                "ExpressionAttributeValues": {
-                  ":pk": {
-                    "S.$": "States.Format('{}#{}', $$.Execution.Input.from, $$.Execution.Input.type)"
-                  },
-                  ":sk": {
-                    "S": "additionalImage#"
-                  }
-                },
-                "Limit": 1
+                "StateMachineArn": "${AdjustAltSwagStateMachine}",
+                "Input": {
+                  "from.$": "$$.Execution.Input.from",
+                  "type.$": "$$.Execution.Input.type",
+                  "tags.$": "$$.Execution.Input.tags",
+                  "AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$": "$$.Execution.Id"
+                }
               },
-              "Resource": "${DynamoDBQuery}",
-              "ResultPath": "$.additional",
-              "Next": "Has Additional Images?"
-            },
-            "Has Additional Images?": {
-              "Type": "Choice",
-              "Choices": [
-                {
-                  "Variable": "$.additional.Count",
-                  "NumericGreaterThan": 0,
-                  "Next": "Update Linked Records"
-                }
-              ],
-              "Default": "Remove Old Swag"
-            },
-            "Update Linked Records": {
-              "Type": "Parallel",
-              "Branches": [
-                {
-                  "StartAt": "Update Original Swag Record",
-                  "States": {
-                    "Update Original Swag Record": {
-                      "Type": "Task",
-                      "Resource": "${DynamoDBUpdateItem}",
-                      "Parameters": {
-                        "TableName": "${SwagTable}",
-                        "Key": {
-                          "pk": {
-                            "S.$": "States.Format('{}#{}', $$.Execution.Input.from, $$.Execution.Input.type)"
-                          },
-                          "sk": {
-                            "S": "swag"
-                          }
-                        },
-                        "UpdateExpression": "SET #url = :url, etag = :etag",
-                        "ExpressionAttributeNames": {
-                          "#url": "url"
-                        },
-                        "ExpressionAttributeValues": {
-                          ":url": {
-                            "S.$": "$.additional.Items[0].url.S"
-                          },
-                          ":etag": {
-                            "S.$": "$$.State.EnteredTime"
-                          }
-                        }
-                      },
-                      "Next": "Update Momento Vector Index",
-                      "ResultPath": null
-                    },
-                    "Update Momento Vector Index": {
-                      "Type": "Task",
-                      "Resource": "${LambdaInvoke}",
-                      "OutputPath": "$.Payload",
-                      "Parameters": {
-                        "FunctionName": "${AddToMVIFunction}",
-                        "Payload": {
-                          "swag": {
-                            "pk.$": "$.additional.Items[0].pk.S",
-                            "from.$": "$$.Execution.Input.from",
-                            "swagType.$": "$$.Execution.Input.newType",
-                            "url.$": "$.additional.Items[0].url.S",
-                            "tags.$": "$$.Execution.Input.tags"
-                          }
-                        }
-                      },
-                      "Retry": [
-                        {
-                          "ErrorEquals": [
-                            "Lambda.ServiceException",
-                            "Lambda.AWSLambdaException",
-                            "Lambda.SdkClientException",
-                            "Lambda.TooManyRequestsException"
-                          ],
-                          "IntervalSeconds": 1,
-                          "MaxAttempts": 3,
-                          "BackoffRate": 2
-                        }
-                      ],
-                      "End": true
-                    }
-                  }
-                },
-                {
-                  "StartAt": "Delete First Additional Image",
-                  "States": {
-                    "Delete First Additional Image": {
-                      "Type": "Task",
-                      "Resource": "${DynamoDBDeleteItem}",
-                      "Parameters": {
-                        "TableName": "${SwagTable}",
-                        "Key": {
-                          "pk": {
-                            "S.$": "$.additional.Items[0].pk.S"
-                          },
-                          "sk": {
-                            "S.$": "$.additional.Items[0].sk.S"
-                          }
-                        }
-                      },
-                      "End": true
-                    }
-                  }
-                }
-              ],
               "End": true
-            },
-            "Remove Old Swag": {
-              "Type": "Parallel",
-              "End": true,
-              "Branches": [
-                {
-                  "StartAt": "Delete Embedding From MVI",
-                  "States": {
-                    "Delete Embedding From MVI": {
-                      "Type": "Task",
-                      "Resource": "${LambdaInvoke}",
-                      "OutputPath": "$.Payload",
-                      "Parameters": {
-                        "Payload": {
-                          "id.$": "States.Format('{}#{}', $$.Execution.Input.from, $$.Execution.Input.type)"
-                        },
-                        "FunctionName": "${RemoveEmbeddingFunction}"
-                      },
-                      "Retry": [
-                        {
-                          "ErrorEquals": [
-                            "Lambda.ServiceException",
-                            "Lambda.AWSLambdaException",
-                            "Lambda.SdkClientException",
-                            "Lambda.TooManyRequestsException"
-                          ],
-                          "IntervalSeconds": 1,
-                          "MaxAttempts": 3,
-                          "BackoffRate": 2
-                        }
-                      ],
-                      "End": true
-                    }
-                  }
-                },
-                {
-                  "StartAt": "Delete Swag Record",
-                  "States": {
-                    "Delete Swag Record": {
-                      "Type": "Task",
-                      "Resource": "${DynamoDBDeleteItem}",
-                      "Parameters": {
-                        "TableName": "${SwagTable}",
-                        "Key": {
-                          "pk": {
-                            "S.$": "States.Format('{}#{}', $$.Execution.Input.from, $$.Execution.Input.type)"
-                          },
-                          "sk": {
-                            "S": "swag"
-                          }
-                        }
-                      },
-                      "End": true
-                    }
-                  }
-                }
-              ]
             }
           }
         },

@@ -15,6 +15,7 @@ const Home: NextPage = () => {
 
   const { photoId, admin, s } = router.query;
   const [swag, setSwag] = useState<SwagSummary[]>([]);
+  const [pageToken, setPageToken] = useState<string>(null);
   const [lastViewedPhoto, setLastViewedPhoto] = useLastViewedPhoto();
   const [showAddSwag, setShowAddSwag] = useState<Boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>();
@@ -22,17 +23,9 @@ const Home: NextPage = () => {
 
   const lastViewedPhotoRef = useRef<HTMLAnchorElement>(null)
   const searchRef = useRef<HTMLInputElement>(null);
+  const lastSwagRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchSwagList = async () => {
-      try {
-        const swagList = await getSwagList({});
-        setSwag(swagList.swag);
-      } catch (error) {
-        console.error('Failed to fetch swag list:', error);
-      }
-    };
-
     const search = async () => {
       setIsSearching(true);
       const results = await swagSearch(s.toString());
@@ -53,7 +46,45 @@ const Home: NextPage = () => {
       lastViewedPhotoRef.current.scrollIntoView({ block: 'center' })
       setLastViewedPhoto(null)
     }
-  }, [photoId, lastViewedPhoto, setLastViewedPhoto])
+  }, [photoId, lastViewedPhoto, setLastViewedPhoto]);
+
+  useEffect(() => {
+    const loadMoreSwag = async () => {
+      if (pageToken) { // Check if there is a next page
+        try {
+          const swagList = await getSwagList({ pageToken });
+          setSwag(prevSwag => [...prevSwag, ...swagList.swag]);
+          setPageToken(swagList.pageToken);
+        } catch (error) {
+          console.error('Failed to load more swag:', error);
+        }
+      }
+    };
+
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        loadMoreSwag();
+      }
+    }, { threshold: 1.0 });
+
+    if (lastSwagRef.current) {
+      observer.observe(lastSwagRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [pageToken, swag.length]);
+
+  const fetchSwagList = async () => {
+    try {
+      const swagList = await getSwagList({ pageToken });
+      setSwag(swagList.swag);
+      setPageToken(swagList.pageToken);
+    } catch (error) {
+      console.error('Failed to fetch swag list:', error);
+    }
+  };
 
   const handleSearchQueryChanged = async (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') {
@@ -65,7 +96,7 @@ const Home: NextPage = () => {
 
       searchRef.current?.blur();
     }
-  }
+  };
 
   return (
     <>
@@ -75,7 +106,6 @@ const Home: NextPage = () => {
         <meta name="twitter:image" content="/ogSwaghunt.png" />
       </Head>
       <main className="mx-auto max-w-[1960px] p-4">
-
         {showAddSwag && <SubmitForm showAdmin={admin?.toString()} onClose={() => { setShowAddSwag(false) }} />}
         <div className="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4">
           <div className="mainTile after:content relative mb-5 flex h-[500px] flex-col items-center justify-center gap-4 overflow-hidden rounded-lg bg-momento-forest-green px-6 text-center text-white shadow-highlight after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight lg:pt-0">
@@ -115,8 +145,14 @@ const Home: NextPage = () => {
                 <p>No swag to see here</p>
               </div>
             ) : (
-              swag?.map(({ from, type, url, upvotes }) => (
-                <UpvotableImage from={from} type={type} url={url} upvotes={upvotes} admin={admin}/>
+              swag?.map(({ from, type, url, upvotes }, index) => (
+                <div key={`${from}#${type}`}>
+                  {index == swag.length - 1 ?
+                    (<UpvotableImage ref={lastSwagRef} from={from} type={type} url={url} upvotes={upvotes} admin={admin?.toString()} />)
+                    : (<UpvotableImage from={from} type={type} url={url} upvotes={upvotes} admin={admin?.toString()} />)
+                  }
+
+                </div>
               )))
           )}
 

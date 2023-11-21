@@ -221,7 +221,7 @@ paths:
     put:
       summary: Updates swag detail
       tags:
-        - Swag
+        - Admin
       requestBody:
         required: true
         content:
@@ -250,6 +250,31 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateSwagFunction.Arn}/invocations
+        httpMethod: POST
+        type: aws_proxy
+    delete:
+      parameters:
+        - name: imageUrl
+          in: query
+          required: false
+          schema:
+            type: string
+      summary: Delete a swag item
+      tags:
+        - Admin
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/UnknownError'
+      x-amazon-apigateway-request-validator: Validate All
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteSwagFunction.Arn}/invocations
         httpMethod: POST
         type: aws_proxy
 

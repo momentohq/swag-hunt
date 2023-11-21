@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { upvote } from '../services/SwagService';
@@ -13,7 +13,7 @@ interface UpvotableImageProps {
   admin?: string
 }
 
-const UpvotableImage: React.FC<UpvotableImageProps> = ({ from, type, url, upvotes, admin }) => {
+const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, type, url, upvotes, admin }, ref) => {
   const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
 
   const upvoteImage = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -24,7 +24,7 @@ const UpvotableImage: React.FC<UpvotableImageProps> = ({ from, type, url, upvote
   }
 
   return (
-    <div className="relative mb-5 block w-full">
+    <div ref={ref} className="relative mb-5 block w-full">
       <Link
         key={`${from}#${type}`}
         href={`/${from}/${type}${admin ? '?admin=' + admin : ''}`}
@@ -43,20 +43,22 @@ const UpvotableImage: React.FC<UpvotableImageProps> = ({ from, type, url, upvote
                   (max-width: 1536px) 33vw,
                   25vw"
         />
-        <button
-          className="absolute top-2 left-2 bg-white bg-opacity-50 rounded-full p-1 text-momento-forest-green hover:bg-opacity-70 focus:outline-none"
-          onClick={(e: React.MouseEvent<HTMLButtonElement>) => upvoteImage(e)}
-        >
-          <div className="flex flex-row gap-1 justify-center items-center">
-            <Image alt="upvote" src="/arrow.svg" width="12" height="12" className="ml-1" />
-            <div className="text-black rounded pr-2 ">
-              {upvoteCount?.toString()}
+        {upvoteCount && (
+          <button
+            className="absolute top-2 left-2 bg-white bg-opacity-50 rounded-full p-1 text-momento-forest-green hover:bg-opacity-70 focus:outline-none"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => upvoteImage(e)}
+          >
+            <div className="flex flex-row gap-1 justify-center items-center">
+              <Image alt="upvote" src="/arrow.svg" width="12" height="12" className="ml-1" />
+              <div className="text-black rounded pr-2 ">
+                {upvoteCount?.toString()}
+              </div>
             </div>
-          </div>
-        </button>
+          </button>
+        )}
       </Link>
     </div >
   );
-};
+});
 
 export default UpvotableImage;

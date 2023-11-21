@@ -194,7 +194,6 @@ Resources:
       ResourceRecords:
         - !GetAtt SwagApiGatewayDomainName.DistributionDomainName
 
-
   AddSwagFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -243,6 +242,39 @@ Resources:
             RestApiId: !Ref SwagApi
             Path: /swag/{from}/{type}
             Method: PUT
+
+  DeleteSwagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/delete-swag
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action: states:StartExecution
+              Resource: !Ref AdjustAltSwagStateMachine
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref MomentoSecret
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+                - dynamodb:DeleteItem
+              Resource: !GetAtt SwagTable.Arn
+      Environment:
+        Variables:
+          ADJUST_SWAG_STATE_MACHINE: !Ref AdjustAltSwagStateMachine
+          SECRET_ID: !Ref MomentoSecret
+          TABLE_NAME: !Ref SwagTable
+      Events:
+        FromApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SwagApi
+            Path: /swag/{from}/{type}
+            Method: DELETE
 
   GetSwagFunction:
     Type: AWS::Serverless::Function
@@ -654,6 +686,8 @@ Resources:
         SaveSwagFunction: !GetAtt SaveSwagRecordFunction.Arn
         AddToMVIFunction: !GetAtt CreateSwagEmbeddingFunction.Arn
         RemoveEmbeddingFunction: !GetAtt RemoveEmbeddingFunction.Arn
+        StepFunctionsStartExecution: !Sub arn:${AWS::Partition}:states:::states:startExecution
+        AdjustAltSwagStateMachine: !Ref AdjustAltSwagStateMachine
       Policies:
         - Version: 2012-10-17
           Statement:
@@ -669,6 +703,36 @@ Resources:
               Action: lambda:InvokeFunction
               Resource:
                 - !GetAtt SaveSwagRecordFunction.Arn
+                - !GetAtt CreateSwagEmbeddingFunction.Arn
+                - !GetAtt RemoveEmbeddingFunction.Arn
+            - Effect: Allow
+              Action: states:StartExecution
+              Resource: !Ref AdjustAltSwagStateMachine
+
+  AdjustAltSwagStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: workflows/adjust-alt-swag-records.asl.json
+      DefinitionSubstitutions:
+        DynamoDBDeleteItem: !Sub arn:${AWS::Partition}:states:::dynamodb:deleteItem
+        DynamoDBQuery: !Sub arn:${AWS::Partition}:states:::aws-sdk:dynamodb:query
+        DynamoDBUpdateItem: !Sub arn:${AWS::Partition}:states:::dynamodb:updateItem
+        LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
+        SwagTable: !Ref SwagTable
+        AddToMVIFunction: !GetAtt CreateSwagEmbeddingFunction.Arn
+        RemoveEmbeddingFunction: !GetAtt RemoveEmbeddingFunction.Arn
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+                - dynamodb:UpdateItem
+              Resource: !GetAtt SwagTable.Arn
+            - Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource:
                 - !GetAtt CreateSwagEmbeddingFunction.Arn
                 - !GetAtt RemoveEmbeddingFunction.Arn
 
