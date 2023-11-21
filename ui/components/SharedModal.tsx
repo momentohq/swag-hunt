@@ -3,11 +3,16 @@ import Image from 'next/image'
 import { useSwipeable } from 'react-swipeable'
 import { variants } from '../utils/animationVariants'
 import type { SharedModalProps } from '../utils/types'
-import { Puff } from 'react-loading-icons'
+import { useContext, useEffect, useState } from 'react'
+import CacheContext from '../services/CacheContext'
+import { CacheGet } from '@gomomento/sdk-web';
+
 
 export default function SharedModal({ mainImage, images, currentPhoto, changePhoto, direction }: SharedModalProps) {
+  const cacheClient = useContext(CacheContext);
   const navigation = images.length > 0;
   let swagImages = [mainImage, ...images];
+  const [imgSource, setImgSource] = useState<string>(currentPhoto);
 
   let index = 0;
 
@@ -24,6 +29,24 @@ export default function SharedModal({ mainImage, images, currentPhoto, changePho
     },
     trackMouse: true,
   });
+
+  useEffect(() => {
+    loadDataFromCache();
+  }, [currentPhoto]);
+
+  const loadDataFromCache = async () => {
+    if (cacheClient) {
+      const cacheKey = `public/${currentPhoto.split('/').pop()}`;
+      console.log(cacheKey);
+      const response = await cacheClient.get(process.env.NEXT_PUBLIC_CACHE_NAME, cacheKey);
+      if (response instanceof CacheGet.Hit) {
+        const data = Buffer.from(response.valueUint8Array()).toString('base64');
+        setImgSource(`data:image/webp;base64, ${data}`);
+      } else {
+        setImgSource(currentPhoto);
+      }
+    }
+  }
 
   return (
     <MotionConfig
@@ -48,11 +71,12 @@ export default function SharedModal({ mainImage, images, currentPhoto, changePho
                 className="relative w-full h-full"
               >
                 <Image
-                  src={currentPhoto}
+                  src={imgSource}
                   layout="fill"
                   objectFit="contain"
                   priority
                   alt="Conference Swag"
+                  blurDataURL="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFhAJ/wlseKgAAAABJRU5ErkJggg=="
                 />
               </motion.div>
             </AnimatePresence>

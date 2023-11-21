@@ -29,6 +29,7 @@ interface Message {
 
 export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string, onClose?: (string?) => void }) {
   let overlayRef = useRef();
+  
   const [formData, setFormData] = useState<FormData>({
     image: null,
     from: '',
@@ -230,18 +231,6 @@ export default function SubmitForm({ showAdmin, onClose }: { showAdmin?: string,
             onChange={handleInputChange}
             className="mt-1 block w-full rounded-sm p-1 border-gray-300 shadow-sm text-black"
             placeholder="Be specific"
-          />
-        </label>
-
-        <label className="block mt-4">
-          <span className="block text-left">Email</span>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            className="mt-1 block w-full rounded-sm p-1 shadow-sm text-black"
-            placeholder="(Optional) Enter for a raffle entry"
           />
         </label>
 

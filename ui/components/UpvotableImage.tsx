@@ -1,10 +1,11 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState, forwardRef, useContext } from 'react';
+import { CacheGet } from '@gomomento/sdk-web';
 import Link from 'next/link';
 import Image from 'next/image';
 import { upvote } from '../services/SwagService';
 import { toTitleCase } from '../utils/titleCase';
+import CacheContext from '../services/CacheContext';
 
-// Define the props types
 interface UpvotableImageProps {
   from: string;
   type: string;
@@ -14,7 +15,9 @@ interface UpvotableImageProps {
 }
 
 const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, type, url, upvotes, admin }, ref) => {
+  const cacheClient = useContext(CacheContext);
   const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
+  const [imgSource, setImgSource] = useState<string>(url);
 
   const upvoteImage = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -22,6 +25,22 @@ const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, 
     const newCount: Number = await upvote(from, type, upvoteCount);
     setUpvoteCount(newCount);
   }
+
+
+  const loadDataFromCache = async () => {
+    if (cacheClient) {
+      const cacheKey = `public/${url.split('/').pop()}`;
+      const response = await cacheClient.get(process.env.NEXT_PUBLIC_CACHE_NAME, cacheKey);
+      if (response instanceof CacheGet.Hit) {
+        const data = Buffer.from(response.valueUint8Array()).toString('base64');
+        setImgSource(`data:image/webp;base64, ${data}`);
+      } else {
+        setImgSource(url);
+      }
+    }
+  }
+
+  loadDataFromCache();
 
   return (
     <div ref={ref} className="relative mb-5 block w-full">
@@ -35,7 +54,7 @@ const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, 
           alt={`${toTitleCase(from)} ${toTitleCase(type)}`}
           className="transform rounded-lg brightness-90 transition will-change-auto group-hover:brightness-110"
           style={{ transform: 'translate3d(0, 0, 0)' }}
-          src={url}
+          src={imgSource}
           width={720}
           height={480}
           sizes="(max-width: 640px) 100vw,

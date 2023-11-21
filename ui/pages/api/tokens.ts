@@ -1,4 +1,4 @@
-import { AuthClient, CredentialProvider, ExpiresIn, TopicRole, GenerateDisposableToken } from '@gomomento/sdk';
+import { AuthClient, CredentialProvider, ExpiresIn, TopicRole, GenerateDisposableToken, AllTopics, CacheRole } from '@gomomento/sdk';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 let authClient: AuthClient;
@@ -15,18 +15,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   try {
     await initializeMomento();
 
-    const referenceNumber = req.query.referenceNumber as string;
     const tokenScope = {
       permissions: [
         {
           role: TopicRole.SubscribeOnly,
           cache: process.env.NEXT_PUBLIC_CACHE_NAME!,
-          topic: referenceNumber
+          topic: AllTopics
+        },
+        {
+          role: CacheRole.ReadOnly,
+          cache: process.env.NEXT_PUBLIC_CACHE_NAME!
         }
       ]
     };
 
-    const token = await authClient.generateDisposableToken(tokenScope, ExpiresIn.minutes(10));
+    const token = await authClient.generateDisposableToken(tokenScope, ExpiresIn.hours(1));
     if (token instanceof GenerateDisposableToken.Success) {
       const vendedToken: TokenResponse = {
         token: token.authToken,

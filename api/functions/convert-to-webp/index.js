@@ -20,6 +20,7 @@ exports.handler = async (state) => {
     }
 
     const webpBuffer = await sharp(image)
+      .rotate()
       .resize({
         width: resizeOptions.width,
         height: resizeOptions.height,
@@ -46,7 +47,7 @@ exports.handler = async (state) => {
 
     try {
       await setupCacheClient();
-      const cacheResponse = await cacheClient.set(process.env.CACHE_NAME, convertedKey, webpBuffer);
+      const cacheResponse = await cacheClient.set(process.env.CACHE_NAME, convertedKey, webpBuffer, { ttl: 2505600000 });
       if (cacheResponse instanceof CacheSet.Error) {
         console.error(cacheResponse.errorCode(), cacheResponse.message());
       }
