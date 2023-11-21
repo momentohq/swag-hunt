@@ -113,7 +113,7 @@ const Home: NextPage = () => {
             <div className="absolute inset-0 flex items-center justify-center opacity-20">
               <span className="absolute left-0 right-0 bottom-0 h-[400px] bg-gradient-to-b from-black/0 via-black to-black"></span>
             </div>
-            <Link href="/" className='z-50' onClick={() => setSearchQuery('')}>
+            <Link href="/" className='z-10' onClick={() => setSearchQuery('')}>
               <div className='px-5 w-full'>
                 <Image
                   src="/logo.gif"
