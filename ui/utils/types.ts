@@ -57,3 +57,9 @@ export interface UpdateSwag {
   location?: string
   tags?: string[]
 }
+
+export interface DeleteSwag {
+  from: string
+  type: string
+  url: string
+}

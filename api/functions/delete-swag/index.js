@@ -7,6 +7,8 @@ const sfn = new SFNClient();
 const ddb = new DynamoDBClient();
 const secrets = new SecretsManagerClient();
 
+var cachedSecrets;
+
 exports.handler = async (event) => {
   try {
     const adminOverride = getMomentoAdminHeader(event.headers);
@@ -57,8 +59,6 @@ exports.handler = async (event) => {
             sk: itemToDelete.sk
           })
         }));
-
-
       } else {
         // This is a main swag image and things need to shuffle around
         await sfn.send(new StartExecutionCommand({

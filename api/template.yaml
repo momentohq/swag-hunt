@@ -34,7 +34,7 @@ Globals:
         CORS_ORIGIN: !Ref CORSOrigin
   Api:
     Cors:
-      AllowMethods: "'POST,GET,PUT,OPTIONS'"
+      AllowMethods: "'POST,GET,PUT,DELETE,OPTIONS'"
       AllowHeaders: "'Content-Type,x-momento-admin-override'"
       AllowOrigin: "'*'"
 

@@ -90,7 +90,6 @@ export default function SharedModal({
                 />
               </motion.div>
             </AnimatePresence>
-
           </div>
         </div>
 

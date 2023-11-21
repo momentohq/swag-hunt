@@ -2,7 +2,7 @@ const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-be
 const bedrock = new BedrockRuntimeClient();
 
 const swagTypes = ['shirt', 'hoodie', 'socks', 'sticker', 'hat', 'pin', 'toy', 'pen', 'cup', 'stuffed animal',
-  'coozie', 'power bank', 'sunglasses', 'notebook', 'tote', 'phone accessory', 'other', 'unknown'];
+  'coozie', 'power bank', 'sunglasses', 'notebook', 'tote', 'phone accessory', 'other', 'bottle', 'mug', 'unknown'];
 
 exports.handler = async (state) => {
   try {

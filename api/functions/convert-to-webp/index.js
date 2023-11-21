@@ -10,10 +10,19 @@ let cacheClient;
 exports.handler = async (state) => {
   try {
     const image = await loadImageBuffer(state.key);
+    const metadata = await sharp(image).metadata();
+
+    let resizeOptions;
+    if (metadata.width > metadata.height) {
+      resizeOptions = { width: 1920, height: 1280 };
+    } else {
+      resizeOptions = { width: 1280, height: 1920 };
+    }
+
     const webpBuffer = await sharp(image)
       .resize({
-        width: 1920,
-        height: 1280,
+        width: resizeOptions.width,
+        height: resizeOptions.height,
         fit: 'inside',
         withoutEnlargement: true
       })
