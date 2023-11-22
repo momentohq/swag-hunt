@@ -19,7 +19,7 @@ exports.handler = async (event) => {
       ExpressionAttributeValues: marshall({
         ':type': 'swag'
       }),
-      Limit: 2,
+      Limit: 20,
       ...nextToken && { ExclusiveStartKey: nextToken }
     }));
 
