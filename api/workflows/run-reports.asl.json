@@ -4,7 +4,8 @@
   "States": {
     "Run Reports": {
       "Type": "Parallel",
-      "End": true,
+      "Next": "Send Report To Slack",
+      "ResultPath": "$.stats",
       "Branches": [
         {
           "StartAt": "Get View Totals Record",
@@ -24,13 +25,15 @@
                 }
               },
               "Next": "Get Last View Total",
-              "OutputPath": "$.totals"
+              "ResultPath": "$.totals"
             },
             "Get Last View Total": {
               "Type": "Task",
               "Parameters": {
                 "TableName": "${SwagTable}",
                 "KeyConditionExpression": "pk = :pk and begins_with(sk, :sk)",
+                "ScanIndexForward": false,
+                "Limit": 1,
                 "ExpressionAttributeValues": {
                   ":pk": {
                     "S": "report"
@@ -42,7 +45,7 @@
               },
               "Resource": "${DynamoDBQuery}",
               "Next": "Calculate Views Since Last Run",
-              "OutputPath": "$.lastRun"
+              "ResultPath": "$.lastRun"
             },
             "Calculate Views Since Last Run": {
               "Type": "Task",
@@ -91,7 +94,7 @@
                   }
                 }
               },
-              "OutputPath": "$.totals",
+              "ResultPath": "$.totals",
               "Next": "Get Last Search Total"
             },
             "Get Last Search Total": {
@@ -99,6 +102,8 @@
               "Parameters": {
                 "TableName": "${SwagTable}",
                 "KeyConditionExpression": "pk = :pk and begins_with(sk, :sk)",
+                "ScanIndexForward": false,
+                "Limit": 1,
                 "ExpressionAttributeValues": {
                   ":pk": {
                     "S": "report"
@@ -109,7 +114,7 @@
                 }
               },
               "Resource": "${DynamoDBQuery}",
-              "OutputPath": "$.lastRun",
+              "ResultPath": "$.lastRun",
               "Next": "Calculate Searches Since Last Run"
             },
             "Calculate Searches Since Last Run": {
@@ -155,11 +160,11 @@
                     "S": "metrics"
                   },
                   "sk": {
-                    "S": "upload"
+                    "S": "uploads"
                   }
                 }
               },
-              "OutputPath": "$.totals",
+              "ResultPath": "$.totals",
               "Next": "Get Last Upload Total"
             },
             "Get Last Upload Total": {
@@ -167,17 +172,19 @@
               "Parameters": {
                 "TableName": "${SwagTable}",
                 "KeyConditionExpression": "pk = :pk and begins_with(sk, :sk)",
+                "ScanIndexForward": false,
+                "Limit": 1,
                 "ExpressionAttributeValues": {
                   ":pk": {
                     "S": "report"
                   },
                   ":sk": {
-                    "S": "upload"
+                    "S": "uploads"
                   }
                 }
               },
               "Resource": "${DynamoDBQuery}",
-              "OutputPath": "$.lastRun",
+              "ResultPath": "$.lastRun",
               "Next": "Calculate Uploads Since Last Run"
             },
             "Calculate Uploads Since Last Run": {
@@ -189,7 +196,77 @@
                 "Payload": {
                   "totals.$": "$.totals.Item",
                   "lastRun.$": "$.lastRun.Items[0]",
-                  "reportType": "upload",
+                  "reportType": "uploads",
+                  "top": 10
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Get Voting Totals Record",
+          "States": {
+            "Get Voting Totals Record": {
+              "Type": "Task",
+              "Resource": "${DynamoDBGetItem}",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "Key": {
+                  "pk": {
+                    "S": "metrics"
+                  },
+                  "sk": {
+                    "S": "voting"
+                  }
+                }
+              },
+              "ResultPath": "$.totals",
+              "Next": "Get Last Voting Total"
+            },
+            "Get Last Voting Total": {
+              "Type": "Task",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "KeyConditionExpression": "pk = :pk and begins_with(sk, :sk)",
+                "ScanIndexForward": false,
+                "Limit": 1,
+                "ExpressionAttributeValues": {
+                  ":pk": {
+                    "S": "report"
+                  },
+                  ":sk": {
+                    "S": "voting"
+                  }
+                }
+              },
+              "Resource": "${DynamoDBQuery}",
+              "ResultPath": "$.lastRun",
+              "Next": "Calculate Voting Since Last Run"
+            },
+            "Calculate Voting Since Last Run": {
+              "Type": "Task",
+              "Resource": "${LambdaInvoke}",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${GetDailyValuesFunction}",
+                "Payload": {
+                  "totals.$": "$.totals.Item",
+                  "lastRun.$": "$.lastRun.Items[0]",
+                  "reportType": "voting",
                   "top": 10
                 }
               },
@@ -211,6 +288,34 @@
           }
         }
       ]
+    },
+    "Send Report To Slack": {
+      "Type": "Task",
+      "Resource": "${LambdaInvoke}",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "${SendReportToSlackFunction}",
+        "Payload": {
+          "views.$": "$.stats[0].top",
+          "search.$": "$.stats[1].top",
+          "upvotes.$": "$.stats[3].top",
+          "uploads.$": "$.stats[2].top"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "End": true
     }
   }
 }

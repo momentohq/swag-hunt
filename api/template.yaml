@@ -24,7 +24,7 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: nodejs18.x
+    Runtime: nodejs20.x
     Architectures:
       - arm64
     Tracing: Active
@@ -316,6 +316,7 @@ Resources:
             - Effect: Allow
               Action:
                 - dynamodb:UpdateItem
+                - dynamodb:PutItem
               Resource: !GetAtt SwagTable.Arn
             - Effect: Allow
               Action: events:PutEvents
@@ -589,6 +590,13 @@ Resources:
         Variables:
           TABLE_NAME: !Ref SwagTable
 
+  SendReportToSlackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/send-report-to-slack
+      Policies:
+        - AWSLambdaBasicExecutionRole
+
   SharpLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -598,6 +606,7 @@ Resources:
       CompatibleRuntimes:
         - nodejs14.x
         - nodejs18.x
+        - nodejs20.x
 
   ProcessSwagStateMachine:
     Type: AWS::Serverless::StateMachine
@@ -807,33 +816,25 @@ Resources:
         LambdaInvoke: !Sub arn:${AWS::Partition}:states:::lambda:invoke
         SwagTable: !Ref SwagTable
         GetDailyValuesFunction: !GetAtt GetDailyValuesFunction.Arn
+        SendReportToSlackFunction: !GetAtt SendReportToSlackFunction.Arn
       Policies:
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Action: lambda:InvokeFunction
-              Resource: !GetAtt GetDailyValuesFunction.Arn
+              Resource:
+                - !GetAtt GetDailyValuesFunction.Arn
+                - !GetAtt SendReportToSlackFunction.Arn
             - Effect: Allow
               Action:
                 - dynamodb:GetItem
                 - dynamodb:Query
               Resource: !GetAtt SwagTable.Arn
       Events:
-        S3ItemUploaded:
-          Type: EventBridgeRule
+        Schedule:
+          Type: Schedule
           Properties:
-            Pattern:
-              source:
-                - aws.s3
-              detail-type:
-                - Object Created
-              detail:
-                bucket:
-                  name:
-                    - !Ref SwagBucket
-                object:
-                  key:
-                    - prefix: quarantine/
+            Schedule: "cron(0 1 ? * MON-FRI *)"
 
   GetSwagTypeFunction:
     Type: AWS::Serverless::Function

@@ -15,6 +15,7 @@ interface UpvotableImageProps {
 }
 
 const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, type, url, upvotes, admin }, ref) => {
+  const key = `${from}#${type}#upvote`;
   const { cacheClient, refreshSDK } = useContext(CacheContext);
   const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
   const [imgSource, setImgSource] = useState<string>(url);
@@ -22,8 +23,12 @@ const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, 
   const upvoteImage = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    const newCount: Number = await upvote(from, type, upvoteCount);
-    setUpvoteCount(newCount);
+    const didUpvote = localStorage?.getItem(key);
+    if (!didUpvote) {
+      const newCount: Number = await upvote(from, type, upvoteCount);
+      setUpvoteCount(newCount);
+      localStorage?.setItem(key, 'true');
+    }
   }
 
 
