@@ -298,6 +298,8 @@ paths:
                     type: integer
                 required:
                   - newValue
+        204:
+          $ref: '#/components/responses/NoContent'
         404:
           $ref: '#/components/responses/NotFound'
         500:

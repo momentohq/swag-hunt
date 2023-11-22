@@ -45,10 +45,33 @@
               "StringEquals": "Success"
             }
           ],
-          "Next": "Get Existing Swag"
+          "Next": "Update Success Metrics"
         }
       ],
-      "Default": "Delete Swag Record"
+      "Default": "Update Rejected Metrics"
+    },
+    "Update Rejected Metrics": {
+      "Type": "Task",
+      "Resource": "${EventBridgePutEvents}",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "metricType": "uploads",
+              "metrics": [
+                {
+                  "name": "swagNotFound",
+                  "value": 1
+                }
+              ]
+            },
+            "DetailType": "Update Metrics",
+            "Source": "swag hunt"
+          }
+        ]
+      },
+      "Next": "Delete Swag Record",
+      "ResultPath": null
     },
     "Delete Swag Record": {
       "Type": "Task",
@@ -114,6 +137,33 @@
       "Type": "Wait",
       "Seconds": 5,
       "Next": "Get Image Processing Record"
+    },
+    "Update Success Metrics": {
+      "Type": "Task",
+      "Resource": "${EventBridgePutEvents}",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "metricType": "uploads",
+              "metrics": [
+                {
+                  "name": "successful",
+                  "value": 1
+                },
+                {
+                  "name.$": "$.Item.type.S",
+                  "value": 1
+                }
+              ]
+            },
+            "DetailType": "Update Metrics",
+            "Source": "swag hunt"
+          }
+        ]
+      },
+      "Next": "Get Existing Swag",
+      "ResultPath": null
     },
     "Get Existing Swag": {
       "Type": "Task",

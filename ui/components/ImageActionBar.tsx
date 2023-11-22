@@ -12,13 +12,18 @@ interface ActionBarProps {
 }
 
 export default function ImageActionBar({ from, type, upvotes, closeModal }: ActionBarProps) {
+  const key = `${from}#${type}#upvote`;
   const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
 
   const upvoteImage = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    const newCount: Number = await upvote(from, type, upvoteCount);
-    setUpvoteCount(newCount);
+    const didUpvote = localStorage?.getItem(key);
+    if (!didUpvote) {
+      const newCount: Number = await upvote(from, type, upvoteCount);
+      setUpvoteCount(newCount);
+      localStorage?.setItem(key, 'true');
+    }
   }
 
   return (
@@ -51,7 +56,10 @@ export default function ImageActionBar({ from, type, upvotes, closeModal }: Acti
           title="Open fullsize version"
           rel="noreferrer"
         >
-          <Twitter className="h-5 w-5" />
+          <div className="flex flex-row gap-2 items-center">
+            <span className="font-semibold">Share</span>
+            <Twitter className="h-5 w-5" />
+          </div>
         </a>
 
       </div>

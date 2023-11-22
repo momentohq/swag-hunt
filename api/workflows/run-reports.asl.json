@@ -1,0 +1,216 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Run Reports",
+  "States": {
+    "Run Reports": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "Get View Totals Record",
+          "States": {
+            "Get View Totals Record": {
+              "Type": "Task",
+              "Resource": "${DynamoDBGetItem}",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "Key": {
+                  "pk": {
+                    "S": "metrics"
+                  },
+                  "sk": {
+                    "S": "views"
+                  }
+                }
+              },
+              "Next": "Get Last View Total",
+              "OutputPath": "$.totals"
+            },
+            "Get Last View Total": {
+              "Type": "Task",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "KeyConditionExpression": "pk = :pk and begins_with(sk, :sk)",
+                "ExpressionAttributeValues": {
+                  ":pk": {
+                    "S": "report"
+                  },
+                  ":sk": {
+                    "S": "views"
+                  }
+                }
+              },
+              "Resource": "${DynamoDBQuery}",
+              "Next": "Calculate Views Since Last Run",
+              "OutputPath": "$.lastRun"
+            },
+            "Calculate Views Since Last Run": {
+              "Type": "Task",
+              "Resource": "${LambdaInvoke}",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${GetDailyValuesFunction}",
+                "Payload": {
+                  "totals.$": "$.totals.Item",
+                  "lastRun.$": "$.lastRun.Items[0]",
+                  "reportType": "views",
+                  "top": 10
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Get Search Totals Record",
+          "States": {
+            "Get Search Totals Record": {
+              "Type": "Task",
+              "Resource": "${DynamoDBGetItem}",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "Key": {
+                  "pk": {
+                    "S": "metrics"
+                  },
+                  "sk": {
+                    "S": "search"
+                  }
+                }
+              },
+              "OutputPath": "$.totals",
+              "Next": "Get Last Search Total"
+            },
+            "Get Last Search Total": {
+              "Type": "Task",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "KeyConditionExpression": "pk = :pk and begins_with(sk, :sk)",
+                "ExpressionAttributeValues": {
+                  ":pk": {
+                    "S": "report"
+                  },
+                  ":sk": {
+                    "S": "search"
+                  }
+                }
+              },
+              "Resource": "${DynamoDBQuery}",
+              "OutputPath": "$.lastRun",
+              "Next": "Calculate Searches Since Last Run"
+            },
+            "Calculate Searches Since Last Run": {
+              "Type": "Task",
+              "Resource": "${LambdaInvoke}",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${GetDailyValuesFunction}",
+                "Payload": {
+                  "totals.$": "$.totals.Item",
+                  "lastRun.$": "$.lastRun.Items[0]",
+                  "reportType": "search",
+                  "top": 10
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Get Upload Totals Record",
+          "States": {
+            "Get Upload Totals Record": {
+              "Type": "Task",
+              "Resource": "${DynamoDBGetItem}",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "Key": {
+                  "pk": {
+                    "S": "metrics"
+                  },
+                  "sk": {
+                    "S": "upload"
+                  }
+                }
+              },
+              "OutputPath": "$.totals",
+              "Next": "Get Last Upload Total"
+            },
+            "Get Last Upload Total": {
+              "Type": "Task",
+              "Parameters": {
+                "TableName": "${SwagTable}",
+                "KeyConditionExpression": "pk = :pk and begins_with(sk, :sk)",
+                "ExpressionAttributeValues": {
+                  ":pk": {
+                    "S": "report"
+                  },
+                  ":sk": {
+                    "S": "upload"
+                  }
+                }
+              },
+              "Resource": "${DynamoDBQuery}",
+              "OutputPath": "$.lastRun",
+              "Next": "Calculate Uploads Since Last Run"
+            },
+            "Calculate Uploads Since Last Run": {
+              "Type": "Task",
+              "Resource": "${LambdaInvoke}",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${GetDailyValuesFunction}",
+                "Payload": {
+                  "totals.$": "$.totals.Item",
+                  "lastRun.$": "$.lastRun.Items[0]",
+                  "reportType": "upload",
+                  "top": 10
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,8 @@
 const { DynamoDBClient, QueryCommand } = require('@aws-sdk/client-dynamodb');
+const { EventBridgeClient, PutEventsCommand} = require('@aws-sdk/client-eventbridge');
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
 
+const eventbridge = new EventBridgeClient();
 const ddb = new DynamoDBClient();
 
 exports.handler = async (event) => {
@@ -31,6 +33,9 @@ exports.handler = async (event) => {
       };
     }) ?? [];
 
+    if(!nextToken){
+      await sendMetricsEvent();
+    }
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -63,4 +68,28 @@ const getPageToken = (encodedToken) => {
     console.warn(err);
     // Do nothing, just load default
   }
-}
+};
+
+const sendMetricsEvent = async () => {
+  try {
+    await eventbridge.send(new PutEventsCommand({
+      Entries: [
+        {
+          DetailType: 'Update Metrics',
+          Source: 'swag hunt',
+          Detail: JSON.stringify({
+            metricType: 'views',
+            metrics: [
+              {
+                name: 'home',
+                value: 1
+              }
+            ]
+          })
+        }
+      ]
+    }));
+  } catch (err) {
+    console.error('Error updating viewing metrics', err);
+  }
+};

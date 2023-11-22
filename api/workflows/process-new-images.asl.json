@@ -212,6 +212,34 @@
               "End": true
             }
           }
+        },
+        {
+          "StartAt": "Update Valid Photo Metrics",
+          "States": {
+            "Update Valid Photo Metrics": {
+              "Type": "Task",
+              "Resource": "${EventBridgePutEvents}",
+              "Parameters": {
+                "Entries": [
+                  {
+                    "Detail": {
+                      "metricType": "uploads",
+                      "metrics": [
+                        {
+                          "name": "imageUploads",
+                          "value": 1
+                        }
+                      ]
+                    },
+                    "DetailType": "Update Metrics",
+                    "Source": "swag hunt"
+                  }
+                ]
+              },
+              "End": true,
+              "ResultPath": null
+            }
+          }
         }
       ]
     },
@@ -264,6 +292,38 @@
                 ]
               },
               "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Update Inappropriate Metrics",
+          "States": {
+            "Update Inappropriate Metrics": {
+              "Type": "Task",
+              "Resource": "${EventBridgePutEvents}",
+              "Parameters": {
+                "Entries": [
+                  {
+                    "Detail": {
+                      "metricType": "uploads",
+                      "metrics": [
+                        {
+                          "name": "inappropriate",
+                          "value": 1
+                        },
+                        {
+                          "name": "imageUploads",
+                          "value": 1
+                        }
+                      ]
+                    },
+                    "DetailType": "Update Metrics",
+                    "Source": "swag hunt"
+                  }
+                ]
+              },
+              "End": true,
+              "ResultPath": null
             }
           }
         }
@@ -334,7 +394,7 @@
               "BooleanEquals": true
             }
           ],
-          "Next": "Success"
+          "Next": "Update Downscale Metrics"
         },
         {
           "And": [
@@ -347,10 +407,60 @@
               "BooleanEquals": false
             }
           ],
-          "Next": "Format Invalid Photo Message"
+          "Next": "Update Invalid Photo Metrics"
         }
       ],
       "Default": "Check For Inappropriate Content"
+    },
+    "Update Downscale Metrics": {
+      "Type": "Task",
+      "Resource": "${EventBridgePutEvents}",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "metricType": "uploads",
+              "metrics": [
+                {
+                  "name": "downscaledOrConverted",
+                  "value": 1
+                }
+              ]
+            },
+            "DetailType": "Update Metrics",
+            "Source": "swag hunt"
+          }
+        ]
+      },
+      "Next": "Success",
+      "ResultPath": null
+    },
+    "Update Invalid Photo Metrics": {
+      "Type": "Task",
+      "Resource": "${EventBridgePutEvents}",
+      "Parameters": {
+        "Entries": [
+          {
+            "Detail": {
+              "metricType": "uploads",
+              "metrics": [
+                {
+                  "name": "photoInvalid",
+                  "value": 1
+                },
+                {
+                  "name": "imageUploads",
+                  "value": 1
+                }
+              ]
+            },
+            "DetailType": "Update Metrics",
+            "Source": "swag hunt"
+          }
+        ]
+      },
+      "Next": "Format Invalid Photo Message",
+      "ResultPath": null
     },
     "Format Invalid Photo Message": {
       "Type": "Pass",

@@ -102,7 +102,7 @@ const Home: NextPage = () => {
 
   const handleAddSwagClosed = (message?: string) => {
     setShowAddSwag(false);
-    if(message){
+    if (message) {
       toast.success(message, {
         position: 'top-right',
         autoClose: 3000,
@@ -148,6 +148,10 @@ const Home: NextPage = () => {
             />
             <p className="max-w-[40ch] text-white/75 sm:max-w-[32ch] z-10">
               Want to add some swag? <button className="linkButton text-momento-mint-green hover:text-momento-dark-mint" onClick={() => setShowAddSwag(true)}>Click Here!</button>
+            </p>
+            <p className="text-sm mt-4">
+              Click an item to get details and share on X/Twitter. Remember to upvote your favorites!<br /> <br/>
+              <i>Share swag 3 times on X/Twitter and get a free Momento sweatshirt at booth 1605. You could also win an iPhone 15 Pro, Nintendo Switch, or Raspberry Pi!</i>
             </p>
           </div>
           {isSearching ? (

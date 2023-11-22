@@ -2,6 +2,9 @@ const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-be
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { CredentialProvider, PreviewVectorIndexClient, VectorIndexConfigurations, VectorSearch, ALL_VECTOR_METADATA,
   CacheClient, Configurations, CacheGet, CacheSet } = require('@gomomento/sdk');
+const { EventBridgeClient, PutEventsCommand } = require('@aws-sdk/client-eventbridge');
+
+const eventbridge = new EventBridgeClient();
 const bedrock = new BedrockRuntimeClient();
 const secrets = new SecretsManagerClient();
 let mviClient;
@@ -15,8 +18,8 @@ exports.handler = async (event) => {
 
     await setupMomentoClients();
     const cachedResult = await getCachedSearchResults(body.query);
-    console.log(cachedResult);
     if (cachedResult) {
+      await sendMetricsEvent(body.query);
       return {
         statusCode: 200,
         body: JSON.stringify({ swag: cachedResult }),
@@ -36,7 +39,7 @@ exports.handler = async (event) => {
       }).filter(r => r && r.url?.startsWith(IMAGE_FILTER)) ?? [];
 
       await cacheSearchResults(body.query, results);
-
+      await sendMetricsEvent(body.query);
       return {
         statusCode: 200,
         body: JSON.stringify({ swag: results }),
@@ -131,4 +134,33 @@ const getSearchEmbedding = async (query) => {
   }
 
   return embedding;
+};
+
+
+const sendMetricsEvent = async (query) => {
+  try {
+    await eventbridge.send(new PutEventsCommand({
+      Entries: [
+        {
+          DetailType: 'Update Metrics',
+          Source: 'swag hunt',
+          Detail: JSON.stringify({
+            metricType: 'search',
+            metrics: [
+              {
+                name: 'total',
+                value: 1
+              },
+              {
+                name: query,
+                value: 1
+              }
+            ]
+          })
+        }
+      ]
+    }));
+  } catch (err) {
+    console.error('Error updating search metrics', err);
+  }
 };
