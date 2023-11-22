@@ -1,14 +1,25 @@
 {
-  "StartAt": "Get Swag Type",
+  "StartAt": "Make Quarantine Object Available for OpenAI",
   "States": {
+    "Make Quarantine Object Available for OpenAI": {
+      "Type": "Task",
+      "Next": "Get Swag Type",
+      "Parameters": {
+        "Bucket": "${SwagBucket}",
+        "Key.$": "$.originalKey",
+        "Acl": "public-read"
+      },
+      "Resource": "${S3PutObjectAcl}",
+      "ResultPath": null
+    },
     "Get Swag Type": {
       "Type": "Task",
       "Resource": "${LambdaInvoke}",
       "ResultPath": "$.getSwagType",
       "Parameters": {
-        "FunctionName": "${GetSwagTypeFunction}",
+        "FunctionName": "${GetTypeFromOpenAIFunction}",
         "Payload": {
-          "labels.$": "$.labels"
+          "imageUrl.$": "States.Format('https://${SwagBucket}.s3.amazonaws.com/{}', $$.Execution.Input.originalKey)"
         }
       },
       "Retry": [
@@ -94,6 +105,15 @@
           "Next": "Newer Execution is Running"
         }
       ],
+      "Next": "Delete Quarantine Copy"
+    },
+    "Delete Quarantine Copy": {
+      "Type": "Task",
+      "Parameters": {
+        "Bucket": "${SwagBucket}",
+        "Key.$": "$$.Execution.Input.originalKey"
+      },
+      "Resource": "${S3DeleteObject}",
       "Next": "Build Failure Message"
     },
     "Build Failure Message": {
@@ -230,7 +250,7 @@
             "S.$": "$$.Execution.Input.lockStartTime"
           },
           ":tags": {
-            "S.$": "$$.Execution.Input.tags"
+            "S.$": "$.getSwagType.Payload.tags"
           }
         }
       },

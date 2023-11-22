@@ -1,0 +1,17 @@
+{
+  "name": "get-type-from-openai",
+  "version": "1.0.0",
+  "description": "Gets the swag type from the uploaded image",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "openai": "^4.19.1"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.454.0"
+  }
+}

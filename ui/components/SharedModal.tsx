@@ -9,7 +9,7 @@ import { CacheGet } from '@gomomento/sdk-web';
 
 
 export default function SharedModal({ mainImage, images, currentPhoto, changePhoto, direction }: SharedModalProps) {
-  const cacheClient = useContext(CacheContext);
+  const { cacheClient, refreshSDK } = useContext(CacheContext);
   const navigation = images.length > 0;
   let swagImages = [mainImage, ...images];
   const [imgSource, setImgSource] = useState<string>(currentPhoto);
@@ -42,8 +42,13 @@ export default function SharedModal({ mainImage, images, currentPhoto, changePho
       if (response instanceof CacheGet.Hit) {
         const data = Buffer.from(response.valueUint8Array()).toString('base64');
         setImgSource(`data:image/webp;base64, ${data}`);
+        console.log('cache');
       } else {
         setImgSource(currentPhoto);
+        if (response instanceof CacheGet.Error && response.errorCode() == 'AUTHENTICATION_ERROR') {
+          refreshSDK();
+        }
+        console.log('internet');
       }
     }
   }

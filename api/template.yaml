@@ -18,6 +18,9 @@ Parameters:
     Type: String
   AdminOverrideKey:
     Type: String
+  OpenAiKey:
+    Type: String
+    NoEcho: true
 
 Globals:
   Function:
@@ -504,13 +507,6 @@ Resources:
           CACHE_NAME: !Ref DefaultCache
           SECRET_ID: !Ref MomentoSecret
 
-  ProcessImageLabelsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/process-image-labels
-      Policies:
-        - AWSLambdaBasicExecutionRole
-
   SaveSwagRecordFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -525,6 +521,23 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref SwagTable
+
+  GetTypeFromOpenAIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/get-type-from-openai
+      Timeout: 90
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref MomentoSecret
+      Environment:
+        Variables:
+          SECRET_ID: !Ref MomentoSecret
 
   SharpLayer:
     Type: AWS::Serverless::LayerVersion
@@ -542,7 +555,6 @@ Resources:
       DefinitionUri: workflows/process-new-images.asl.json
       DefinitionSubstitutions:
         DetectModerationLabels: !Sub arn:${AWS::Partition}:states:::aws-sdk:rekognition:detectModerationLabels
-        DetectLabels: !Sub arn:${AWS::Partition}:states:::aws-sdk:rekognition:detectLabels
         S3DeleteObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:deleteObject
         S3HeadObject: !Sub arn:${AWS::Partition}:states:::aws-sdk:s3:headObject
         DynamoDBPutItem: !Sub arn:${AWS::Partition}:states:::dynamodb:putItem
@@ -555,14 +567,12 @@ Resources:
         SwagTable: !Ref SwagTable
         FormatPhotoFunction: !GetAtt FormatPhotoFunction.Arn
         ConvertHeicFunction: !GetAtt ConvertHeicFunction.Arn
-        ProcessImageLabelsFunction: !GetAtt ProcessImageLabelsFunction.Arn
       Policies:
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Action:
                 - rekognition:DetectModerationLabels
-                - rekognition:DetectLabels
               Resource: "*"
             - Effect: Allow
               Action:
@@ -573,7 +583,6 @@ Resources:
               Action: lambda:InvokeFunction
               Resource:
                 - !GetAtt FormatPhotoFunction.Arn
-                - !GetAtt ProcessImageLabelsFunction.Arn
                 - !GetAtt ConvertHeicFunction.Arn
             - Effect: Allow
               Action: events:PutEvents
@@ -615,19 +624,21 @@ Resources:
         EventBridgePutEvents: !Sub arn:${AWS::Partition}:states:::events:putEvents
         SwagTable: !Ref SwagTable
         SwagBucket: !Ref SwagBucket
-        GetSwagTypeFunction: !GetAtt GetSwagTypeFunction.Arn
         ConvertToWebpFunction: !GetAtt ConvertToWebpFunction.Arn
+        GetTypeFromOpenAIFunction: !GetAtt GetTypeFromOpenAIFunction.Arn
       Policies:
         - Version: 2012-10-17
           Statement:
             - Effect: Allow
               Action: lambda:InvokeFunction
               Resource:
-                - !GetAtt GetSwagTypeFunction.Arn
+                - !GetAtt GetTypeFromOpenAIFunction.Arn
                 - !GetAtt ConvertToWebpFunction.Arn
             - Effect: Allow
               Action: s3:PutObjectAcl
-              Resource: !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/public/*
+              Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/public/*
+              - !Sub arn:${AWS::Partition}:s3:::${SwagBucket}/quarantine/*
             - Effect: Allow
               Action: dynamodb:UpdateItem
               Resource: !GetAtt SwagTable.Arn
@@ -755,7 +766,9 @@ Resources:
           - |-
             {
               "momento": "${MomentoApiKey}",
-              "admin": "${AdminKey}"
+              "admin": "${AdminKey}",
+              "openai": "${OpenAiKey}"
             }
           - MomentoApiKey: !Ref MomentoApiKey
             AdminKey: !Ref AdminOverrideKey
+            OpenAiKey: !Ref OpenAiKey

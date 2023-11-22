@@ -15,7 +15,7 @@ interface UpvotableImageProps {
 }
 
 const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, type, url, upvotes, admin }, ref) => {
-  const cacheClient = useContext(CacheContext);
+  const { cacheClient, refreshSDK } = useContext(CacheContext);
   const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
   const [imgSource, setImgSource] = useState<string>(url);
 
@@ -35,6 +35,9 @@ const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, 
         const data = Buffer.from(response.valueUint8Array()).toString('base64');
         setImgSource(`data:image/webp;base64, ${data}`);
       } else {
+        if (response instanceof CacheGet.Error && response.errorCode() == 'AUTHENTICATION_ERROR') {
+          refreshSDK();
+        }
         setImgSource(url);
       }
     }
