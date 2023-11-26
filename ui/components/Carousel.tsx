@@ -70,7 +70,7 @@ export default function Carousel({ swag, admin }: { swag: SwagDetail, admin?: st
         <EditForm showAdmin={admin} data={swag} onClose={() => setShowEditForm(false)} />
       )}
       {showDeleteDialog && (
-        <DeleteDialog showAdmin={admin} swag={swag} onClose={() => setShowDeleteDialog(false)} />
+        <DeleteDialog showAdmin={admin} swag={swag} url={currentPhoto} onClose={() => setShowDeleteDialog(false)} />
       )}
     </div>
   )

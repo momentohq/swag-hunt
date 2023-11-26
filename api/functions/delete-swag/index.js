@@ -21,14 +21,15 @@ exports.handler = async (event) => {
       };
     }
 
-    const { from, type } = event.pathParameters;
+    const from = decodeURI(event.pathParameters.from.toLowerCase().trim());
+    const type = decodeURI(event.pathParameters.type.toLowerCase().trim());
     const url = event.queryStringParameters?.imageUrl?.trim();
 
     const response = await ddb.send(new QueryCommand({
       TableName: process.env.TABLE_NAME,
       KeyConditionExpression: 'pk = :pk',
       ExpressionAttributeValues: marshall({
-        ':pk': `${decodeURI(from.toLowerCase().trim())}#${decodeURI(type.toLowerCase().trim())}`
+        ':pk': `${from}#${type}`
       })
     }));
 

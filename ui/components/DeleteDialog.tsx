@@ -4,13 +4,13 @@ import { Dialog } from '@headlessui/react';
 import { deleteSwag } from '../services/SwagService';
 import { DeleteSwag } from '../utils/types';
 
-export default function DeleteDialog({ showAdmin, swag, onClose }: { showAdmin: string, swag: DeleteSwag, onClose?: () => void }) {
+export default function DeleteDialog({ showAdmin, swag, url, onClose }: { showAdmin: string, swag: DeleteSwag, url: string, onClose?: () => void }) {
   let overlayRef = useRef();
   const [adminOverride, setAdminOverride] = useState<string>(showAdmin);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    await deleteSwag(swag.from, swag.type, swag.url, adminOverride);
+    await deleteSwag(swag.from, swag.type, url, adminOverride);
     onClose();
   };
 
