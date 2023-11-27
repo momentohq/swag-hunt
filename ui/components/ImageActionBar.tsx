@@ -15,6 +15,12 @@ export default function ImageActionBar({ from, type, upvotes, closeModal }: Acti
   const key = `${from}#${type}#upvote`;
   const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
 
+  const twitterMessage = `Check out this swag I found at re:Invent on @gomomento #swaghunt!
+
+  #reinvent #swag
+  https://swaghunt.io/${from}/${type}/`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterMessage)}`;
+
   const upvoteImage = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -50,7 +56,7 @@ export default function ImageActionBar({ from, type, upvotes, closeModal }: Acti
       </div>
       <div className="flex flex-row gap-1 justify-center align-center w-fit">
         <a
-          href={`https://twitter.com/intent/tweet?text=Check%20out%20this%20swag%20I%20found%20at%20re:Invent%20on%20%40gomomento%20%23swaghunt!%0A%23reinvent%20%23swag%0A%0Ahttps://swaghunt.io/${from}/${type}`}
+          href={twitterUrl}
           className="p-2 text-momento-forest-green backdrop-blur-lg transition hover:bg-momento-mint-green"
           target="_blank"
           title="Open fullsize version"

@@ -31,7 +31,6 @@ const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, 
     }
   }
 
-
   const loadDataFromCache = async () => {
     if (cacheClient) {
       const cacheKey = `public/${url.split('/').pop()}`;
@@ -54,7 +53,7 @@ const UpvotableImage = forwardRef<HTMLDivElement, UpvotableImageProps>(({ from, 
     <div ref={ref} className="relative mb-5 block w-full">
       <Link
         key={`${from}#${type}`}
-        href={`/${from}/${type}${admin ? '?admin=' + admin : ''}`}
+        href={`/${encodeURIComponent(from)}/${encodeURIComponent(type)}${admin ? '?admin=' + admin : ''}`}
         shallow
         className="after:content group relative mb-5 block w-full cursor-zoom-in after:pointer-events-none after:absolute after:inset-0 after:rounded-lg after:shadow-highlight"
       >
