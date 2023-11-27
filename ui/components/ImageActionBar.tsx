@@ -18,7 +18,8 @@ export default function ImageActionBar({ from, type, upvotes, closeModal }: Acti
   const twitterMessage = `Check out this swag I found at re:Invent on @gomomento #swaghunt!
 
   #reinvent #swag
-  https://swaghunt.io/${from}/${type}/`;
+  https://swaghunt.io/${encodeURIComponent(from)}/${encodeURIComponent(type)}/`;
+
   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterMessage)}`;
 
   const upvoteImage = async (e: React.MouseEvent<HTMLButtonElement>) => {
