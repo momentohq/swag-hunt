@@ -15,7 +15,7 @@ export default function ImageActionBar({ from, type, upvotes, closeModal }: Acti
   const key = `${from}#${type}#upvote`;
   const [upvoteCount, setUpvoteCount] = useState<Number>(upvotes);
 
-  const twitterMessage = `Check out this swag I found at re:Invent on @gomomento #swaghunt!
+  const twitterMessage = `Check out this swag I found at re:Invent on @momentohq #swaghunt!
 
   #reinvent #swag
   https://swaghunt.io/${encodeURIComponent(from)}/${encodeURIComponent(type)}/`;
