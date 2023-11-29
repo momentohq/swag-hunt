@@ -30,6 +30,7 @@ const Home: NextPage = () => {
   useEffect(() => {
     const search = async () => {
       setIsSearching(true);
+      setPageToken('');
       const results = await swagSearch(s.toString());
       setSwag(results.swag);
       setSearchQuery(s.toString());
