@@ -16,10 +16,12 @@ exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body);
 
+    const query = body.query?.trim()?.toLowerCase() ?? '';
+
     await setupMomentoClients();
-    const cachedResult = await getCachedSearchResults(body.query);
+    const cachedResult = await getCachedSearchResults(query);
     if (cachedResult) {
-      await sendMetricsEvent(body.query);
+      await sendMetricsEvent(query);
       return {
         statusCode: 200,
         body: JSON.stringify({ swag: cachedResult }),
@@ -27,7 +29,7 @@ exports.handler = async (event) => {
       };
     }
 
-    const embedding = await getSearchEmbedding(body.query);
+    const embedding = await getSearchEmbedding(query);
     const result = await mviClient.search('swaghunt', embedding, {
       topK: 100, metadataFields: ALL_VECTOR_METADATA, scoreThreshold: .4
     });
@@ -38,8 +40,8 @@ exports.handler = async (event) => {
         return hit.metadata;
       }).filter(r => r && r.url?.startsWith(IMAGE_FILTER)) ?? [];
 
-      await cacheSearchResults(body.query, results);
-      await sendMetricsEvent(body.query);
+      await cacheSearchResults(query, results);
+      await sendMetricsEvent(query);
       return {
         statusCode: 200,
         body: JSON.stringify({ swag: results }),

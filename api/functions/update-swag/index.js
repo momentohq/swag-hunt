@@ -26,7 +26,7 @@ exports.handler = async (event) => {
       if (!filter.isProfane(tag)) {
         return tag.toLowerCase();
       }
-    })?.filter(t => t).join(',') ?? '';
+    })?.filter(t => t).join(',') ?? body.type.toLowerCase().trim();
 
     const response = await sfn.send(new StartExecutionCommand({
       stateMachineArn: process.env.UPDATE_SWAG_STATE_MACHINE,
